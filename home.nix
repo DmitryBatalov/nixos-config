@@ -4,13 +4,16 @@
 	home.username = "dmitry";
 	home.homeDirectory = "/home/dmitry";
 
-	programs.git = {
-		enable = true;
-		userName = "dmitry.batalov";
-		userEmail = "dmtiryabat@gmail.com";
-		extraConfig = {
-			init.defaultBranch = "main";
+	programs = {
+		git = {
+			enable = true;
+			userName = "dmitry.batalov";
+			userEmail = "dmtiryabat@gmail.com";
+			extraConfig = {
+				init.defaultBranch = "main";
+			};
 		};
+		lazygit.enable = true;
 	};
 
 	home.stateVersion = "25.05";
