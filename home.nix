@@ -21,6 +21,7 @@
 		enable = true;
 		shellAliases = {
 			btw = "echo i use nisos, btw";
+			lg = "lazygit";
 		};
 	};
 	
