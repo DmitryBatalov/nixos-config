@@ -82,6 +82,8 @@
     packages = with pkgs; [
       tree
       docker-compose
+      btop
+      lazygit
     ];
   };
 
@@ -92,9 +94,8 @@
   environment.systemPackages = with pkgs; [
     vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     wget
-    alacritty
+    st
     git
-    lazygit
   ];
 
   fonts.packages = with pkgs; [
