@@ -42,6 +42,10 @@
   #   useXkbConfig = true; # use xkb.options in tty.
   # };
 
+  virtualisation.docker = {
+	enable = true;
+	enableOnBoot =  true;	
+  };
   # Enable the X11 windowing system.
   # services.displayManager.ly.enable = true; 
   services.xserver = {
@@ -74,9 +78,10 @@
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.dmitry = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
+    extraGroups = [ "wheel" "docker" ]; # Enable ‘sudo’ for the user.
     packages = with pkgs; [
       tree
+      docker-compose
     ];
   };
 
