@@ -52,7 +52,7 @@
     enable = true;
     autoRepeatDelay = 200;
     autoRepeatInterval = 35;
-    windowManager.dwm.enable = true;
+    windowManager.i3.enable = true;
   };
 
   
