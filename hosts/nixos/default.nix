@@ -9,6 +9,7 @@
   imports = [
     ../../modules/system.nix
     ../../modules/i3.nix
+    ../../modules/docker.nix
 
     # Include the results of the hardware scan.
     ./hardware-configuration.nix
