@@ -23,6 +23,10 @@
 
   home.stateVersion = "25.05";
 
+  home.packages = with pkgs; [
+    surf
+  ];
+
   programs.bash = {
     enable = true;
     shellAliases = {
