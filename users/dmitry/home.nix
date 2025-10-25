@@ -30,5 +30,9 @@
     lazygit = {
       enable = true;
     };
+
+    firefox = {
+      enable = true;
+    };
   };
 }
