@@ -6,6 +6,10 @@
     ../../home/rofi
   ];
 
+  home.packages = [
+    pkgs.flameshot
+  ];
+
   programs = {
     git = {
       enable = true;
