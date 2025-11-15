@@ -8,6 +8,7 @@
 
   home.packages = [
     pkgs.flameshot
+    pkgs.telegram-desktop
   ];
 
   programs = {
