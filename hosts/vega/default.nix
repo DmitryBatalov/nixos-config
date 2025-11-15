@@ -15,9 +15,26 @@
     ./hardware-configuration.nix
   ];
 
-  # Use the systemd-boot EFI boot loader.
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
+  fileSystems."/mnt/shared" = {
+    device = "shared";
+    fsType = "virtiofs";
+    options = ["defaults"];
+  };
+
+  # Use the GRUB 2 boot loader.
+  boot = {
+    loader = {
+      grub = {
+        enable = true;
+        device = "/dev/vda";
+        # efiSupport = true;
+        # efiInstallAsRemovable = true;
+      };
+    };
+  };
+
+  # Define on which hard drive you want to install Grub.
+  boot.initrd.kernelModules = ["virtiofs"];
 
   # boot.loader.efi.efiSysMountPoint = "/boot/efi";
   networking.hostName = "nixos"; # Define your hostname.
