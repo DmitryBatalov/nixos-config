@@ -10,6 +10,7 @@
     pkgs.flameshot
     pkgs.amnezia-vpn
     pkgs.telegram-desktop
+    pkgs.keepassxc
   ];
 
   programs = {
@@ -38,6 +39,10 @@
     };
 
     firefox = {
+      enable = true;
+    };
+
+    btop = {
       enable = true;
     };
   };
