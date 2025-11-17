@@ -125,6 +125,8 @@
   #};
   #security.polkit.enable = true;
 
+  hardware.bluetooth.enable = true;
+
   services = {
     pulseaudio.enable = false;
 
@@ -132,6 +134,7 @@
 
     #geoclue2.enable = true;
 
+    blueman.enable = true;
     pipewire = {
       enable = true;
       alsa.enable = true;
@@ -139,6 +142,13 @@
       pulse.enable = true;
       # If you want to use JACK applications, uncomment this
       # jack.enable = true;
+
+      extraConfig.pipewire."92-low-latency" = {
+        context.properties = {
+          default.clock.rate = 48000;
+          default.clock.quantum = 32;
+        };
+      };
 
       # use the example session manager (no others are packaged yet so this is enabled by default,
       # no need to redefine it in your config for now)
