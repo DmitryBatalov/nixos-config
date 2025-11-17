@@ -21,6 +21,7 @@ in {
     pkgs.telegram-desktop
     pkgs.keepassxc
     unstable.jetbrains.rider
+    unstable.freelens-bin
   ];
 
   programs = {
