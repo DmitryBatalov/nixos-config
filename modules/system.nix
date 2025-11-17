@@ -34,6 +34,7 @@
 
   # Configure console keymap
   console.keyMap = "ru";
+
   # Select internationalisation properties.
   i18n = {
     defaultLocale = "en_US.UTF-8";
@@ -116,6 +117,7 @@
     scrot
     neofetch
     xfce.thunar # xfce4's file manager
+    pavucontrol
   ];
 
   # Enable sound with pipewire.
