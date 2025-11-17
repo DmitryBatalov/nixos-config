@@ -57,16 +57,6 @@
     };
   };
 
-  # services.xserver = {
-  #   layout = "us,ru"; # You can have multiple layouts
-  #   xkbVariant = ","; # Default variants
-  #   xkbOptions = "grp:win_space_toggle"; # Switch layouts with Win+Space
-  # };
-
-  # Enable necessary locales
-  # Enable CUPS to print documents.
-  #services.printing.enable = true;
-
   fonts = {
     packages = with pkgs; [
       nerd-fonts.fira-code
