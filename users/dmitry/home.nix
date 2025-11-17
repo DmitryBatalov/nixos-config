@@ -56,5 +56,9 @@ in {
     btop = {
       enable = true;
     };
+
+    chromium = {
+      enable = true;
+    };
   };
 }
