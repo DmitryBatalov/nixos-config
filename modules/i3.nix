@@ -41,9 +41,11 @@
     };
 
     # Configure keymap in X11
-    xkb.layout = "us,ru";
-    xkb.variant = ",";
-    xkb.options = "grp:win_space_toggle";
+    xkb = {
+      layout = "us,ru";
+      variant = ",";
+      options = "grp:win_space_toggle";
+    };
   };
 
   # thunar file manager(part of xfce) related options
