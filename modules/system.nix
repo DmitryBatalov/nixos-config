@@ -30,17 +30,44 @@
   nixpkgs.config.allowUnfree = true;
 
   # Set your time zone.
-  time.timeZone = "Europe/Amsterdam";
+  time.timeZone = "Europe/Samara";
 
+  # Configure console keymap
+  console.keyMap = "ru";
   # Select internationalisation properties.
-  i18n.defaultLocale = "en_US.UTF-8";
+  i18n = {
+    defaultLocale = "en_US.UTF-8";
 
+    supportedLocales = [
+      "en_US.UTF-8/UTF-8"
+      "ru_RU.UTF-8/UTF-8"
+    ];
+
+    extraLocaleSettings = {
+      LC_ADDRESS = "ru_RU.UTF-8";
+      LC_IDENTIFICATION = "ru_RU.UTF-8";
+      LC_MEASUREMENT = "ru_RU.UTF-8";
+      LC_MONETARY = "ru_RU.UTF-8";
+      LC_NAME = "ru_RU.UTF-8";
+      LC_NUMERIC = "ru_RU.UTF-8";
+      LC_PAPER = "ru_RU.UTF-8";
+      LC_TELEPHONE = "ru_RU.UTF-8";
+      LC_TIME = "ru_RU.UTF-8";
+    };
+  };
+
+  # services.xserver = {
+  #   layout = "us,ru"; # You can have multiple layouts
+  #   xkbVariant = ","; # Default variants
+  #   xkbOptions = "grp:win_space_toggle"; # Switch layouts with Win+Space
+  # };
+
+  # Enable necessary locales
   # Enable CUPS to print documents.
   #services.printing.enable = true;
 
   fonts = {
     packages = with pkgs; [
-      # nerdfonts
       nerd-fonts.fira-code
       nerd-fonts.jetbrains-mono
     ];
@@ -83,6 +110,7 @@
     git
     sysstat
     lm_sensors # for `sensors` command
+
     # minimal screen capture tool, used by i3 blur lock to take a screenshot
     # print screen key is also bound to this tool in i3 config
     scrot
