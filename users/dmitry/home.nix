@@ -38,6 +38,9 @@ in {
       enable = true;
       shellAliases = {
         lg = "lazygit";
+        dcu = "docker compose up -d";
+        dcd = "docker compose down";
+        dcs = "docker compose stop";
       };
     };
 
