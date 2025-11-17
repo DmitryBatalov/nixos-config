@@ -20,6 +20,7 @@ in {
     pkgs.flameshot
     pkgs.telegram-desktop
     pkgs.keepassxc
+    unstable.jetbrains.rider
   ];
 
   programs = {
