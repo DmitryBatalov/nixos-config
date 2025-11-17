@@ -20,6 +20,7 @@ in {
     pkgs.flameshot
     pkgs.telegram-desktop
     pkgs.keepassxc
+    pkgs.libreoffice-qt6-fresh
     unstable.jetbrains.rider
     unstable.freelens-bin
   ];
