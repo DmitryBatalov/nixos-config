@@ -1,4 +1,14 @@
-{pkgs, ...}: {
+{
+  pkgs,
+  nixpkgs-unstable,
+  lib,
+  ...
+}: let
+  unstable = import nixpkgs-unstable {
+    inherit (pkgs) system;
+    config.allowUnfree = true; # Explicit config for unstable
+  };
+in {
   imports = [
     ../../home/core.nix
 
