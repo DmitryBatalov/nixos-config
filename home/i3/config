@@ -34,14 +34,14 @@ workspace_layout default
 ##############################
 
 #border indicator on windows:
-new_window pixel 1
+new_window pixel 2
 
 # thin borders
 # hide_edge_borders both
 
 # Set inner/outer gaps
-gaps inner 6
-gaps outer 3
+gaps inner 4
+gaps outer 2
 
 # show window title bars (not officially supported with i3gaps)
 #default_border normal
@@ -68,30 +68,6 @@ bindsym $mod+8    workspace  $ws8
 bindsym $mod+9    workspace  $ws9
 bindsym $mod+0    workspace  $ws10
 
-# switch to workspace with numpad keys
-bindcode $mod+87 workspace 1
-bindcode $mod+88 workspace 2
-bindcode $mod+89 workspace 3
-bindcode $mod+83 workspace 4
-bindcode $mod+84 workspace 5
-bindcode $mod+85 workspace 6
-bindcode $mod+79 workspace 7
-bindcode $mod+80 workspace 8
-bindcode $mod+81 workspace 9
-bindcode $mod+90 workspace 10
-
-# switch to workspace with numlock numpad keys
-bindcode $mod+Mod2+87 workspace $ws1
-bindcode $mod+Mod2+88 workspace $ws2
-bindcode $mod+Mod2+89 workspace $ws3
-bindcode $mod+Mod2+83 workspace $ws4
-bindcode $mod+Mod2+84 workspace $ws5
-bindcode $mod+Mod2+85 workspace $ws6
-bindcode $mod+Mod2+79 workspace $ws7
-bindcode $mod+Mod2+80 workspace $ws8
-bindcode $mod+Mod2+81 workspace $ws9
-bindcode $mod+Mod2+90 workspace $ws10
-
 # move focused container to workspace
 bindsym $mod+Shift+1    move container to workspace  $ws1
 bindsym $mod+Shift+2    move container to workspace  $ws2
@@ -103,30 +79,6 @@ bindsym $mod+Shift+7    move container to workspace  $ws7
 bindsym $mod+Shift+8    move container to workspace  $ws8
 bindsym $mod+Shift+9    move container to workspace  $ws9
 bindsym $mod+Shift+0    move container to workspace  $ws10
-
-# move focused container to workspace with numpad keys
-bindcode $mod+Shift+Mod2+87 	move container to workspace  $ws1
-bindcode $mod+Shift+Mod2+88 	move container to workspace  $ws2
-bindcode $mod+Shift+Mod2+89 	move container to workspace  $ws3
-bindcode $mod+Shift+Mod2+83 	move container to workspace  $ws4
-bindcode $mod+Shift+Mod2+84 	move container to workspace  $ws5
-bindcode $mod+Shift+Mod2+85 	move container to workspace  $ws6
-bindcode $mod+Shift+Mod2+79 	move container to workspace  $ws7
-bindcode $mod+Shift+Mod2+80 	move container to workspace  $ws8
-bindcode $mod+Shift+Mod2+81 	move container to workspace  $ws9
-bindcode $mod+Shift+Mod2+90 	move container to workspace  $ws10
-
-# move focused container to workspace with numpad keys
-bindcode $mod+Shift+87 	 move container to workspace  $ws1
-bindcode $mod+Shift+88 	 move container to workspace  $ws2
-bindcode $mod+Shift+89 	 move container to workspace  $ws3
-bindcode $mod+Shift+83 	 move container to workspace  $ws4
-bindcode $mod+Shift+84 	 move container to workspace  $ws5
-bindcode $mod+Shift+85 	 move container to workspace  $ws6
-bindcode $mod+Shift+79 	 move container to workspace  $ws7
-bindcode $mod+Shift+80 	 move container to workspace  $ws8
-bindcode $mod+Shift+81 	 move container to workspace  $ws9
-bindcode $mod+Shift+90 	 move container to workspace  $ws10
 
 # resize window (you can also use the mouse for that):
 #mode "resize" {
@@ -170,7 +122,7 @@ bindsym $mod+Shift+e exec ~/.config/i3/scripts/powermenu
 # lock with a picture:
 #bindsym $mod+l exec i3lock -i  ~/.config/i3/i3-lock-screen.png -p default|win -t
 # lock by blurring the screen:
-bindsym $mod+l exec ~/.config/i3/scripts/blur-lock
+#bindsym $mod+l exec ~/.config/i3/scripts/blur-lock
 
 # reload the configuration file
 bindsym $mod+Shift+c reload
@@ -192,7 +144,7 @@ bindsym XF86MonBrightnessDown exec xbacklight -10 && notify-send "Brightness - $
 bindsym $mod+j focus left
 bindsym $mod+k focus down
 bindsym $mod+b focus up
-bindsym $mod+o focus right
+bindsym $mod+semicolon focus right
 
 # alternatively, you can use the cursor keys:
 bindsym $mod+Left focus left
@@ -204,7 +156,7 @@ bindsym $mod+Right focus right
 bindsym $mod+Shift+j move left
 bindsym $mod+Shift+k move down
 bindsym $mod+Shift+b move up
-bindsym $mod+Shift+o move right
+bindsym $mod+Shift+semicolon move right
 
 # alternatively, you can use the cursor keys:
 bindsym $mod+Shift+Left move left
@@ -223,7 +175,7 @@ bindsym $mod+f fullscreen toggle
 
 # change container layout (stacked, tabbed, toggle split)
 bindsym $mod+s layout stacking
-bindsym $mod+g layout tabbed
+bindsym $mod+w layout tabbed
 bindsym $mod+e layout toggle split
 
 # toggle tiling / floating
@@ -261,7 +213,6 @@ bindsym XF86AudioPrev exec playerctl previous
 bindsym $mod+p exec /usr/local/bin/switch-audio-port
 
 ## App shortcuts
-bindsym $mod+w exec /usr/bin/firefox
 bindsym $mod+n exec /usr/bin/thunar
 bindsym Print exec scrot ~/%Y-%m-%d-%T-screenshot.png && notify-send "Screenshot saved to ~/$(date +"%Y-%m-%d-%T")-screenshot.png"
 
@@ -322,7 +273,7 @@ for_window [class=TelegramDesktop] focus
 # For modifications, it can be copied to ~/.config/picom/picom.conf or ~/.config/picom.conf
 # install picom package (yay -S picom)
 # start using default config 
-exec_always --no-startup-id picom -b
+#exec_always --no-startup-id picom -b
 #
 # for custom config:
 #exec_always --no-startup-id picom --config  ~/.config/picom.conf
@@ -332,10 +283,10 @@ exec_always --no-startup-id picom -b
 #############################################
 
 #get auth work with polkit-gnome
-exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
+# exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
 
 # dex execute .desktop files + apps using /etc/xdg/autostart.
-exec --no-startup-id dex --autostart --environment i3
+# exec --no-startup-id dex --autostart --environment i3
 
 # num lock activated
 #exec --no-startup-id numlockx on
@@ -346,7 +297,7 @@ exec --no-startup-id dex --autostart --environment i3
 
 # set wallpaper
 # exec --no-startup-id sleep 2 && nitrogen --restore
-exec --no-startup-id sleep 1 && feh --bg-fill ~/.config/i3/wallpaper.jpg
+# exec --no-startup-id sleep 1 && feh --bg-fill ~/.config/i3/wallpaper.jpg
 
 # set powersavings for display:
 exec --no-startup-id xset s 480 dpms 600 600 600
@@ -452,7 +403,8 @@ client.urgent		    	$urgentred	$urgentred	$white		$yellowbrown	$yellowbrown
 # Start i3bar to display a workspace bar
 # (plus the system information i3status finds out, if available)
 bar {
-		font pango: Noto Sans Regular 10
+                font pango: JetBrains Mono Nerd Font 10
+		# font pango: Noto Sans Regular 10
 		status_command i3blocks -c ~/.config/i3/i3blocks.conf
 	    	position top
 #	    	i3bar_command i3bar --transparency
