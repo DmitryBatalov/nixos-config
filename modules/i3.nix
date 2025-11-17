@@ -28,11 +28,11 @@
         xautolock # lock screen after some time
         i3status # provide information to i3bar
         i3-gaps # i3 with gaps
-        picom # transparency and shadows
+        # picom # transparency and shadows
         feh # set wallpaper
         acpi # battery information
         arandr # screen layout manager
-        dex # autostart applications
+        # dex # autostart applications
         xbindkeys # bind keys to commands
         xorg.xbacklight # control screen brightness
         xorg.xdpyinfo # get screen information
