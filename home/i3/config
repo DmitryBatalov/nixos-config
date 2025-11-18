@@ -217,7 +217,6 @@ bindsym $mod+p exec /usr/local/bin/switch-audio-port
 
 ## App shortcuts
 bindsym $mod+n exec /usr/bin/thunar
-bindsym Print exec scrot ~/%Y-%m-%d-%T-screenshot.png && notify-send "Screenshot saved to ~/$(date +"%Y-%m-%d-%T")-screenshot.png"
 
 # Power Profiles menu switcher (rofi)
 bindsym $mod+Shift+p exec ~/.config/i3/scripts/power-profiles
@@ -482,6 +481,7 @@ bindsym $mod+d exec rofi -modi drun -show drun \
 bindsym $mod+t exec rofi -show window \
 		-config ~/.config/rofi/rofidmenu.rasi
 
+bindsym Print exec flameshot gui
 #bindsym F10 exec rofi -show window \
 #		-config ~/.config/rofi/rofidmenu.rasi
 
