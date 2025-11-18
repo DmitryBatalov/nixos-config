@@ -18,24 +18,11 @@
       pkgs.mkShell {
         packages = with pkgs; [
           dotnetCorePackages.sdk_8_0_3xx-bin
-          (vscode-with-extensions.override {
-            vscodeExtensions = with vscode-extensions; [
-              ionide
-              # pkgs.vscode-utils.extensionsFromVscodeMarketplace
-              # [
-              #   {
-              #     name = "ionide";
-              #     publisher = "Ionide";
-              #     version = "7.28.3";
-              #     sha256 = "";
-              #   }
-              # ]
-            ];
-          })
+          dotnetCorePackages.sdk_10_0-bin
         ];
 
         shellHook = ''
-          dotnet --version
+          dotnet --list-sdks
         '';
       };
   };
