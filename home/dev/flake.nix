@@ -1,5 +1,5 @@
 {
-  description = "Dotnet env";
+  description = "Bidflow dotnet environment";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";
@@ -18,11 +18,13 @@
       pkgs.mkShell {
         packages = with pkgs; [
           dotnetCorePackages.sdk_8_0_3xx-bin
-          dotnetCorePackages.sdk_10_0-bin
+          nodejs_20
+          tmux
         ];
 
         shellHook = ''
-          dotnet --list-sdks
+          dotnet --version
+          echo "nodejs $(node --version)"
         '';
       };
   };

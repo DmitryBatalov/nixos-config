@@ -103,6 +103,7 @@
     wget
     curl
     git
+    tree
     sysstat
     lm_sensors # for `sensors` command
 
