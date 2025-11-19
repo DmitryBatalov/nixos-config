@@ -1,6 +1,7 @@
 {
   pkgs,
   nixpkgs-unstable,
+  config,
   lib,
   ...
 }: let
@@ -19,7 +20,6 @@ in {
   home.packages = [
     pkgs.flameshot
     pkgs.telegram-desktop
-    pkgs.keepassxc
     pkgs.libreoffice-qt6-fresh
     unstable.jetbrains.rider
     unstable.freelens-bin
@@ -51,24 +51,15 @@ in {
       nix-direnv.enable = true;
     };
 
-    alacritty = {
-      enable = true;
-    };
+    ssh.enable = true;
+    alacritty.enable = true;
+    lazygit.enable = true;
 
-    lazygit = {
-      enable = true;
-    };
+    btop.enable = true;
 
-    firefox = {
-      enable = true;
-    };
+    firefox.enable = true;
+    chromium.enable = true;
 
-    btop = {
-      enable = true;
-    };
-
-    chromium = {
-      enable = true;
-    };
+    keepassxc.enable = true;
   };
 }
