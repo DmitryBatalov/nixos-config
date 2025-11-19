@@ -327,10 +327,6 @@ exec --no-startup-id /usr/bin/dunst
 # `yay -S autotiling ; (it is in AUR)
 #exec_always --no-startup-id autotiling
 
-# Autostart apps as you like
-#exec --no-startup-id sleep 2 && Terminal
-#exec --no-startup-id sleep 3 && thunar
-
 ###############
 # system tray #
 ###############
@@ -402,26 +398,27 @@ client.urgent		    	$urgentred	$urgentred	$white		$yellowbrown	$yellowbrown
 # Start i3bar to display a workspace bar
 # (plus the system information i3status finds out, if available)
 bar {
-                font pango: JetBrains Mono Nerd Font 10
-		# font pango: Noto Sans Regular 10
-		status_command i3blocks -c ~/.config/i3/i3blocks.conf
-	    	position top
-#	    	i3bar_command i3bar --transparency
-# it could be that you have no primary display set: set one (xrandr --output <output> --primary)
-# reference: https://i3wm.org/docs/userguide.html#_tray_output
-		    #tray_output primary
-		    tray_padding 0
+        font pango: JetBrains Mono Nerd Font 10
+        # font pango: Noto Sans Regular 10
+        status_command i3blocks -c ~/.config/i3/i3blocks.conf
+        position top
+        #	    	i3bar_command i3bar --transparency
+        # it could be that you have no primary display set: set one (xrandr --output <output> --primary)
+        # reference: https://i3wm.org/docs/userguide.html#_tray_output
 
-# When strip_workspace_numbers is set to yes,
-# any workspace that has a name of the form
-# “[n][:][NAME]” will display only the name.
-strip_workspace_numbers yes
-##strip_workspace_name no
+        #tray_output primary
+        tray_padding 0
 
-		    colors {
-		    separator          $purple
-		    background         $darkgrey
-		    statusline         $white
+        # When strip_workspace_numbers is set to yes,
+        # any workspace that has a name of the form
+        # “[n][:][NAME]” will display only the name.
+        strip_workspace_numbers yes
+        ##strip_workspace_name no
+
+        colors {
+                separator          $purple
+                background         $darkgrey
+                statusline         $white
 #                          		border 		        bg		txt		indicator
 		focused_workspace	$mediumgrey	   	$grey		$darkgrey	$purple
 		active_workspace	$lightblue      	$mediumgrey	$darkgrey	$purple
