@@ -12,6 +12,7 @@
     ../../modules/docker.nix
     ../../modules/network.nix
     ../../modules/printers.nix
+    ../../modules/laptop.nix
 
     # Include the results of the hardware scan.
     ./hardware-configuration.nix
