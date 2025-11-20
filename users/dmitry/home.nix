@@ -42,6 +42,7 @@ in {
         dcu = "docker compose up -d";
         dcd = "docker compose down";
         dcs = "docker compose stop";
+        run-rider = "nix-shell ~/projects/nixos-config/home/programs/rider-fhs.nix";
       };
     };
 
