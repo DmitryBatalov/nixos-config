@@ -149,5 +149,8 @@
     };
 
     udev.packages = with pkgs; [gnome-settings-daemon];
+
+    # the automatic mount USB disks
+    udisks2.enable = true;
   };
 }
