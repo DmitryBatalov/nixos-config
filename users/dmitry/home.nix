@@ -15,6 +15,7 @@ in {
 
     ../../home/i3
     ../../home/rofi
+    ../../home/kube
   ];
 
   home.packages = [
@@ -22,13 +23,9 @@ in {
     pkgs.telegram-desktop
     pkgs.libreoffice-qt6-fresh
     unstable.jetbrains.rider
-    unstable.freelens-bin
     pkgs.freecad
     pkgs.obsidian
     pkgs.vlc
-    (pkgs.google-cloud-sdk.withExtraComponents [pkgs.google-cloud-sdk.components.gke-gcloud-auth-plugin])
-    # pkgs.google-cloud-sdk
-    pkgs.kubectl
   ];
 
   programs = {
@@ -58,8 +55,13 @@ in {
       nix-direnv.enable = true;
     };
 
+    # enable ssh agent (i.e. access remote git repo with ssh key)
     ssh.enable = true;
+
+    # terminal
     alacritty.enable = true;
+
+    # TUI for git
     lazygit.enable = true;
 
     btop.enable = true;
@@ -68,16 +70,8 @@ in {
     chromium.enable = true;
 
     keepassxc.enable = true;
-  # enable auto mount of USB disks
-  services.udiskie = {
-    enable = true;
-    settings = {
-      # workaround for
-      # https://github.com/nix-community/home-manager/issues/632
-      program_options = {
-        # replace with your favorite file manager
-        file_manager = "${pkgs.xfce.thunar}/bin/thunar";
-      };
-    };
   };
+
+  # enable auto mount of USB disks
+  services.udiskie.enable = true;
 }
