@@ -3,7 +3,10 @@
   environment.pathsToLink = ["/libexec"]; # links /libexec from derivations to /run/current-system/sw
 
   services = {
-    displayManager.defaultSession = "none+i3";
+    displayManager = {
+      defaultSession = "none+i3";
+      # gdm.enable = true;
+    };
 
     xserver = {
       enable = true;
@@ -15,10 +18,9 @@
         xterm.enable = false;
       };
 
-      displayManager = {
-        lightdm.enable = false;
-        gdm.enable = true;
-      };
+      # displayManager = {
+      #   lightdm.enable = false;
+      # };
 
       windowManager.i3 = {
         enable = true;
@@ -29,7 +31,7 @@
           i3lock # default i3 screen locker
           xautolock # lock screen after some time
           i3status # provide information to i3bar
-          i3-gaps # i3 with gaps
+          i3 # i3 with gaps
           feh # set wallpaper
           acpi # battery information
           arandr # screen layout manager

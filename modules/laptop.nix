@@ -10,17 +10,24 @@
 
   # services = {
   #   logind = {
-  #     lidSwitch = "poweroff";
-  #     lidSwitchExternalPower = "lock";
-  #     lidSwitchDocked = "ignore";
+  #     settings = {
+  #       Login = {
+  #         HandleLidSwitchDocked = "ignore";
+  #         HandleLidSwitchExternalPower = "lock";
+  #         HandleLidSwitch = "poweroff";
+  #       };
+  #     };
   #   };
-  # };
 
   services = {
     logind = {
-      lidSwitch = "poweroff";
-      lidSwitchExternalPower = "lock";
-      lidSwitchDocked = "ignore";
+      settings = {
+        Login = {
+          HandleLidSwitchDocked = "ignore";
+          HandleLidSwitchExternalPower = "lock";
+          HandleLidSwitch = "poweroff";
+        };
+      };
     };
   };
 }

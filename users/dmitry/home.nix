@@ -31,9 +31,11 @@ in {
   programs = {
     git = {
       enable = true;
-      userName = "dmitry.batalov";
-      userEmail = "dmtiryabat@gmail.com";
-      extraConfig = {
+      settings = {
+        user = {
+          name = "dmitry.batalov";
+          email = "dmtiryabat@gmail.com";
+        };
         init.defaultBranch = "main";
       };
     };
@@ -67,9 +69,26 @@ in {
     btop.enable = true;
 
     firefox.enable = true;
-    chromium.enable = true;
+    chromium = {
+      enable = true;
+    };
 
-    keepassxc.enable = true;
+    keepassxc = {
+      enable = true;
+      autostart = true;
+      settings = {
+        FdoSecrets.Enabled = true; # Enable Secret Service Integration
+        GUI.LaunchAtStartup = true;
+        # Browser = {
+        #   Enabled = true;
+        # };
+      };
+    };
+  };
+
+  xdg = {
+    autostart.enable = true; # Enable creation of XDG autostart entries.
+    # configFile."mimeapps.list".force = true;
   };
 
   # enable auto mount of USB disks
