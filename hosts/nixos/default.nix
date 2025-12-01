@@ -13,6 +13,7 @@
     ../../modules/network.nix
     ../../modules/printers.nix
     ../../modules/laptop.nix
+    ../../modules/quemu-kvm.nix
 
     # Include the results of the hardware scan.
     ./hardware-configuration.nix
