@@ -127,8 +127,6 @@
   services = {
     pulseaudio.enable = false;
 
-    dbus.packages = [pkgs.gcr];
-
     blueman.enable = true;
     pipewire = {
       enable = true;
