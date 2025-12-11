@@ -87,6 +87,7 @@ in {
   };
 
   xdg = {
+    enable = true;
     autostart.enable = true; # Enable creation of XDG autostart entries.
     # configFile."mimeapps.list".force = true;
   };
