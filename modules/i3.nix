@@ -39,6 +39,7 @@
           xorg.xbacklight # control screen brightness
           xorg.xdpyinfo # get screen information
           sysstat # get system information
+          xclip
         ];
       };
 
