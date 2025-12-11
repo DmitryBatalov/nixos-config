@@ -10,5 +10,9 @@
   # if you use libvirtd on a desktop environment
   programs.virt-manager.enable = true; # can be used to manage non-local hosts as well
 
-  users.users.${username}.extraGroups = ["libvirtd"];
+  users.users.${username}.extraGroups = ["libvirtd" "kvm" "plugdev"];
+
+  environment.systemPackages = with pkgs; [
+    spice-gtk
+  ];
 }
