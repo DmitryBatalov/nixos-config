@@ -96,8 +96,7 @@ in {
 
   xdg = {
     enable = true;
-    autostart.enable = true; # Enable creation of XDG autostart entries.
-    # configFile."mimeapps.list".force = true;
+    autostart.enable = true;
   };
 
   # enable auto mount of USB disks
