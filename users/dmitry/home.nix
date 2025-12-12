@@ -84,6 +84,14 @@ in {
         # };
       };
     };
+
+    tmux = {
+      enable = true;
+      keyMode = "vi";
+      baseIndex = 1;
+      mouse = true;
+      terminal = "screen-256color";
+    };
   };
 
   xdg = {
