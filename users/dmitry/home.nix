@@ -93,6 +93,10 @@ in {
       mouse = true;
       terminal = "screen-256color";
     };
+
+    neovim = {
+      enable = true;
+    };
   };
 
   xdg = {
