@@ -247,6 +247,7 @@ set $ws10 "10"
 
 # in order to get a class of the application, run in shell `xprop` and select a window
 # bind program to workspace and focus to them on startup:
+assign [class="jetbrains-rider"] $ws1
 assign [class="Terminal"] $ws1
 assign [class="(?i)firefox"] $ws2
 assign [class="chromium"] $ws2
