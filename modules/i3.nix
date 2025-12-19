@@ -40,6 +40,7 @@
           xorg.xdpyinfo # get screen information
           sysstat # get system information
           xclip
+          file-roller # An archive manager from GNOME
         ];
       };
 
