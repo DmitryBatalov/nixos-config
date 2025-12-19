@@ -67,6 +67,7 @@ in {
     lazygit.enable = true;
 
     btop.enable = true;
+    ripgrep.enable = true;
 
     firefox.enable = true;
     chromium = {
