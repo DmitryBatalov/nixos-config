@@ -110,6 +110,7 @@
     # minimal screen capture tool, used by i3 blur lock to take a screenshot
     # print screen key is also bound to this tool in i3 config
     scrot
+    imagemagick # used by blur-lock script to blur the screenshot
     neofetch
     xfce.thunar # xfce4's file manager
     pavucontrol
