@@ -115,6 +115,8 @@
     xfce.thunar # xfce4's file manager
     pavucontrol
     calc
+    pam_u2f # FIDO2 PAM module + pamu2fcfg registration tool
+    libfido2 # FIDO2 library and fido2-token utility
   ];
 
   # Enable sound with pipewire.
@@ -125,6 +127,19 @@
   # security.polkit.enable = true;
 
   hardware.bluetooth.enable = true;
+
+  # FIDO2 authentication (PIN + touch) as alternative to password
+  security.pam.u2f = {
+    enable = true;
+    control = "sufficient";
+    settings = {
+      cue = true;
+    };
+  };
+
+  security.pam.services.login.u2fAuth = true;
+  security.pam.services.sudo.u2fAuth = true;
+  security.pam.services.i3lock.u2fAuth = lib.mkForce true;
 
   security.rtkit.enable = true;
   services = {
@@ -150,6 +165,10 @@
     };
 
     udev.packages = with pkgs; [gnome-settings-daemon];
+    udev.extraRules = ''
+      # RUTOKEN MFA FIDO2 - grant access to logged-in users
+      KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0a89", ATTRS{idProduct}=="0093", TAG+="uaccess"
+    '';
 
     # the automatic mount USB disks
     udisks2.enable = true;
