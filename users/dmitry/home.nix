@@ -102,7 +102,7 @@ in
       enable = true;
       autostart = true;
       settings = {
-        FdoSecrets.Enabled = true; # Enable Secret Service Integration
+        FdoSecrets.Enabled = false;
         GUI = {
           CompactMode = true;
           MinimizeOnStartup = true;
