@@ -30,6 +30,8 @@
           i3blocks # status bar
           i3lock # default i3 screen locker
           xautolock # lock screen after some time
+          xsecurelock # PAM-based screen locker with FIDO2 support
+          mpv # used by xsecurelock saver_mpv for blur background
           i3status # provide information to i3bar
           i3 # i3 with gaps
           feh # set wallpaper

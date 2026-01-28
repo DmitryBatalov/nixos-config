@@ -134,12 +134,14 @@
     control = "sufficient";
     settings = {
       cue = true;
+      timeout = 30;
     };
   };
 
   security.pam.services.login.u2fAuth = true;
   security.pam.services.sudo.u2fAuth = true;
   security.pam.services.i3lock.u2fAuth = lib.mkForce true;
+  security.pam.services.xsecurelock.u2fAuth = true;
 
   security.rtkit.enable = true;
   services = {

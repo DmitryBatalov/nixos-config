@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 
-PICTURE=/tmp/i3lock.png
-SCREENSHOT="scrot -z $PICTURE"
+PICTURE="/tmp/xsecurelock-bg.png"
+BLUR="0x8"
 
-BLUR="5x4"
+scrot -z "$PICTURE"
+magick "$PICTURE" -blur "$BLUR" "$PICTURE"
 
-$SCREENSHOT
-convert $PICTURE -blur $BLUR $PICTURE
-i3lock -i $PICTURE
-rm $PICTURE
+export XSECURELOCK_SAVER="$HOME/.config/i3/scripts/blur-saver"
+xsecurelock
+
+rm -f "$PICTURE"

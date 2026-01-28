@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+# Custom xsecurelock saver that displays a blurred screenshot.
+# Called by xsecurelock via XSECURELOCK_SAVER env var.
+# The blurred image is prepared by blur-lock before launching xsecurelock.
+
+PICTURE="/tmp/xsecurelock-bg.png"
+
+if [ ! -f "$PICTURE" ]; then
+  # Fallback: if no blurred image exists, just sleep forever (blank screen)
+  exec sleep infinity
+fi
+
+exec mpv --no-terminal --no-input-default-bindings --no-osc --no-osd-bar \
+  --loop=inf --wid="${XSCREENSAVER_WINDOW}" "$PICTURE"
