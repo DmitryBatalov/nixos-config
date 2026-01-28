@@ -114,6 +114,14 @@
             group = "[T]oggle";
           }
           {
+            __unkeyed-1 = "<leader>d";
+            group = "[D]ocument";
+          }
+          {
+            __unkeyed-1 = "<leader>w";
+            group = "[W]orkspace";
+          }
+          {
             __unkeyed-1 = "<leader>l";
             group = "[L]SP";
           }
@@ -278,6 +286,48 @@
           "<leader>D" = {
             action = "type_definition";
             desc = "Type [D]efinition";
+          };
+          "<leader>ds" = {
+            action = "document_symbol";
+            desc = "[D]ocument [S]ymbols";
+          };
+          "<leader>ws" = {
+            action = "workspace_symbol";
+            desc = "[W]orkspace [S]ymbols";
+          };
+          "<C-s>" = {
+            action = "signature_help";
+            desc = "Signature Help";
+          };
+          "<leader>lf" = {
+            action = "format";
+            desc = "[L]SP [F]ormat";
+          };
+          "<leader>li" = {
+            action = "incoming_calls";
+            desc = "[L]SP [I]ncoming calls";
+          };
+          "<leader>lo" = {
+            action = "outgoing_calls";
+            desc = "[L]SP [O]utgoing calls";
+          };
+        };
+        diagnostic = {
+          "[d" = {
+            action = "goto_prev";
+            desc = "Previous [D]iagnostic";
+          };
+          "]d" = {
+            action = "goto_next";
+            desc = "Next [D]iagnostic";
+          };
+          "<leader>e" = {
+            action = "open_float";
+            desc = "Show Diagnostic Float";
+          };
+          "<leader>q" = {
+            action = "setloclist";
+            desc = "Diagnostics to Location List";
           };
         };
       };
