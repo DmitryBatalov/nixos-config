@@ -113,6 +113,7 @@
     neofetch
     xfce.thunar # xfce4's file manager
     pavucontrol
+    calc
   ];
 
   # Enable sound with pipewire.
@@ -120,10 +121,11 @@
   #services.power-profiles-daemon = {
   #  enable = true;
   #};
-  #security.polkit.enable = true;
+  # security.polkit.enable = true;
 
   hardware.bluetooth.enable = true;
 
+  security.rtkit.enable = true;
   services = {
     pulseaudio.enable = false;
 

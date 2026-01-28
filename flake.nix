@@ -8,6 +8,8 @@
       url = "github:nix-community/home-manager/release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nixvim-config.url = "path:./home/dev/nixvim";
+    claude-config.url = "path:./home/dev/cluade";
   };
 
   outputs = inputs @ {

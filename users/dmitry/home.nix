@@ -1,15 +1,19 @@
 {
   pkgs,
   nixpkgs-unstable,
+  nixvim-config,
+  claude-config,
   config,
   lib,
   ...
-}: let
+}:
+let
   unstable = import nixpkgs-unstable {
-    inherit (pkgs) system;
+    inherit (pkgs.stdenv.hostPlatform) system;
     config.allowUnfree = true; # Explicit config for unstable
   };
-in {
+in
+{
   imports = [
     ../../home/core.nix
 
@@ -22,10 +26,12 @@ in {
     pkgs.flameshot
     pkgs.telegram-desktop
     pkgs.libreoffice-qt6-fresh
-    unstable.jetbrains.rider
+    (import ../../home/programs/rider-fhs.nix { inherit pkgs unstable; })
     pkgs.freecad
     pkgs.obsidian
     pkgs.vlc
+    nixvim-config.packages.${pkgs.stdenv.hostPlatform.system}.default
+    claude-config.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 
   programs = {
@@ -42,12 +48,15 @@ in {
 
     bash = {
       enable = true;
+      sessionVariables = {
+        EDITOR = "nvim";
+      };
       shellAliases = {
         lg = "lazygit";
         dcu = "docker compose up -d";
         dcd = "docker compose down";
         dcs = "docker compose stop";
-        run-rider = "nix-shell ~/projects/nixos-config/home/programs/rider-fhs.nix";
+        dcr = "docker compose stop && docker compose up -d";
       };
     };
 
@@ -58,10 +67,19 @@ in {
     };
 
     # enable ssh agent (i.e. access remote git repo with ssh key)
-    ssh.enable = true;
+    ssh = {
+      enable = true;
+      enableDefaultConfig = false;
+      matchBlocks."*" = {
+        addKeysToAgent = "yes";
+      };
+    };
 
     # terminal
-    alacritty.enable = true;
+    alacritty = {
+      enable = true;
+      settings.font.normal.family = "JetBrainsMono Nerd Font";
+    };
 
     # TUI for git
     lazygit.enable = true;
@@ -72,6 +90,12 @@ in {
     firefox.enable = true;
     chromium = {
       enable = true;
+      nativeMessagingHosts = [
+        pkgs.keepassxc
+      ];
+      extensions = [
+        { id = "oboonakemofpalcgghocfoadofidjkkk"; } # KeePassXC-Browser
+      ];
     };
 
     keepassxc = {
@@ -79,10 +103,18 @@ in {
       autostart = true;
       settings = {
         FdoSecrets.Enabled = true; # Enable Secret Service Integration
-        GUI.LaunchAtStartup = true;
-        # Browser = {
-        #   Enabled = true;
-        # };
+        GUI = {
+          CompactMode = true;
+          MinimizeOnStartup = true;
+          MinimizeOnClose = true;
+          MinimizeToTray = true;
+          ShowTrayIcon = true;
+          TrayIconAppearance = "monochrome-light";
+        };
+        Browser = {
+          Enabled = true;
+          BrowserSupport = "chromium";
+        };
       };
     };
 
@@ -91,17 +123,34 @@ in {
       keyMode = "vi";
       baseIndex = 1;
       mouse = true;
-      terminal = "screen-256color";
+      terminal = "tmux-256color";
+      customPaneNavigationAndResize = true;
+      plugins = with pkgs.tmuxPlugins; [
+        {
+          plugin = tokyo-night-tmux;
+          extraConfig = ''
+            set -g @tokyo-night-tmux_theme moon
+          '';
+        }
+      ];
+      extraConfig = ''
+        set -ag terminal-overrides ",*:RGB"
+      '';
     };
 
-    neovim = {
-      enable = true;
-    };
   };
 
   xdg = {
     enable = true;
     autostart.enable = true;
+    desktopEntries.rider = {
+      name = "Rider";
+      exec = "rider";
+      icon = "${unstable.jetbrains.rider}/share/pixmaps/rider.svg";
+      comment = "JetBrains Rider IDE";
+      categories = [ "Development" "IDE" ];
+      terminal = false;
+    };
   };
 
   # enable auto mount of USB disks
