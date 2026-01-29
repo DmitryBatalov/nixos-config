@@ -22,6 +22,27 @@ in
     ../../home/kube
   ];
 
+  # KeePassXC native messaging manifest for Chromium
+  # The nixpkgs keepassxc only ships a Firefox manifest (allowed_extensions).
+  # Chromium requires allowed_origins with the extension's chrome-extension:// URL.
+  home.activation.keepassxcChromiumNativeMessaging = let
+    manifest = pkgs.writeText "keepassxc-chromium-native-messaging.json" (builtins.toJSON {
+      name = "org.keepassxc.keepassxc_browser";
+      description = "KeePassXC integration with native messaging support";
+      path = "${pkgs.keepassxc}/bin/keepassxc-proxy";
+      type = "stdio";
+      allowed_origins = [
+        "chrome-extension://oboonakemofpalcgghocfoadofidjkkk/"
+      ];
+    });
+  in lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+    if [ -L "$HOME/.config/chromium/NativeMessagingHosts" ] || [ -f "$HOME/.config/chromium/NativeMessagingHosts" ]; then
+      rm -f "$HOME/.config/chromium/NativeMessagingHosts"
+    fi
+    mkdir -p "$HOME/.config/chromium/NativeMessagingHosts"
+    ln -sf "${manifest}" "$HOME/.config/chromium/NativeMessagingHosts/org.keepassxc.keepassxc_browser.json"
+  '';
+
   home.packages = [
     pkgs.flameshot
     pkgs.telegram-desktop
@@ -90,9 +111,6 @@ in
     firefox.enable = true;
     chromium = {
       enable = true;
-      nativeMessagingHosts = [
-        pkgs.keepassxc
-      ];
       extensions = [
         { id = "oboonakemofpalcgghocfoadofidjkkk"; } # KeePassXC-Browser
       ];
@@ -113,7 +131,7 @@ in
         };
         Browser = {
           Enabled = true;
-          BrowserSupport = "chromium";
+          ChromiumSupport = true;
         };
       };
     };
