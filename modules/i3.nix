@@ -29,7 +29,7 @@
           dunst # notification daemon
           i3blocks # status bar
           i3lock # default i3 screen locker
-          xautolock # lock screen after some time
+          xidlehook # lock screen after some time, with idle inhibition support
           xsecurelock # PAM-based screen locker with FIDO2 support
           mpv # used by xsecurelock saver_mpv for blur background
           i3status # provide information to i3bar

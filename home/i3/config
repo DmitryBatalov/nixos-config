@@ -316,7 +316,8 @@ exec --no-startup-id xset s 300 dpms 360 360 360
 #exec --no-startup-id xset -dpms
 
 # auto-lock screen after 5 minutes of inactivity
-exec --no-startup-id xautolock -time 5 -locker "~/.config/i3/scripts/blur-lock"
+# skips locking when audio is playing or a fullscreen app is active
+exec --no-startup-id xidlehook --not-when-audio --not-when-fullscreen --timer 300 "~/.config/i3/scripts/blur-lock" ""
 
 
 # xscreensaver
