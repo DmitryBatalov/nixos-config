@@ -36,11 +36,12 @@ in
       ];
     });
   in lib.hm.dag.entryAfter [ "linkGeneration" ] ''
-    if [ -L "$HOME/.config/chromium/NativeMessagingHosts" ] || [ -f "$HOME/.config/chromium/NativeMessagingHosts" ]; then
-      rm -f "$HOME/.config/chromium/NativeMessagingHosts"
-    fi
-    mkdir -p "$HOME/.config/chromium/NativeMessagingHosts"
-    ln -sf "${manifest}" "$HOME/.config/chromium/NativeMessagingHosts/org.keepassxc.keepassxc_browser.json"
+    target="$HOME/.config/chromium/NativeMessagingHosts"
+    # Remove if it's a symlink or file (leftover from previous home-manager generation)
+    [ -L "$target" ] && rm -f "$target"
+    [ -f "$target" ] && rm -f "$target"
+    mkdir -p "$target"
+    ln -sf "${manifest}" "$target/org.keepassxc.keepassxc_browser.json"
   '';
 
   home.packages = [
@@ -131,7 +132,6 @@ in
         };
         Browser = {
           Enabled = true;
-          ChromiumSupport = true;
         };
       };
     };
