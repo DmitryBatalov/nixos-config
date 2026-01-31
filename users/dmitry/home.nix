@@ -25,8 +25,8 @@ in
   # KeePassXC native messaging manifest for Chromium
   # The nixpkgs keepassxc only ships a Firefox manifest (allowed_extensions).
   # Chromium requires allowed_origins with the extension's chrome-extension:// URL.
-  home.activation.keepassxcChromiumNativeMessaging = let
-    manifest = pkgs.writeText "keepassxc-chromium-native-messaging.json" (builtins.toJSON {
+  home.file.".config/chromium/NativeMessagingHosts/org.keepassxc.keepassxc_browser.json" = {
+    text = builtins.toJSON {
       name = "org.keepassxc.keepassxc_browser";
       description = "KeePassXC integration with native messaging support";
       path = "${pkgs.keepassxc}/bin/keepassxc-proxy";
@@ -34,15 +34,9 @@ in
       allowed_origins = [
         "chrome-extension://oboonakemofpalcgghocfoadofidjkkk/"
       ];
-    });
-  in lib.hm.dag.entryAfter [ "linkGeneration" ] ''
-    target="$HOME/.config/chromium/NativeMessagingHosts"
-    # Remove if it's a symlink or file (leftover from previous home-manager generation)
-    [ -L "$target" ] && rm -f "$target"
-    [ -f "$target" ] && rm -f "$target"
-    mkdir -p "$target"
-    ln -sf "${manifest}" "$target/org.keepassxc.keepassxc_browser.json"
-  '';
+    };
+    force = true;
+  };
 
   home.packages = [
     pkgs.flameshot
