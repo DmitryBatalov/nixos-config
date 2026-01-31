@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+SSH_CMD="ssh -D 1081 -N -C -f -p 443 dmitry@45.151.68.245"
+DISABLED_FLAG="/tmp/ssh-tunnel-disabled"
+
+is_running() {
+    pgrep -f "ssh -D 1081.*45.151.68.245" > /dev/null 2>&1
+}
+
+start_tunnel() {
+    $SSH_CMD
+}
+
+stop_tunnel() {
+    pkill -f "ssh -D 1081.*45.151.68.245"
+}
+
+# Handle click (toggle)
+if [ "${BLOCK_BUTTON}" = "1" ]; then
+    if is_running; then
+        stop_tunnel
+        touch "$DISABLED_FLAG"
+    else
+        rm -f "$DISABLED_FLAG"
+        start_tunnel
+    fi
+fi
+
+# Auto-reconnect if not disabled
+if ! is_running && [ ! -f "$DISABLED_FLAG" ]; then
+    start_tunnel
+fi
+
+# Display status
+if is_running; then
+    echo "󰒄 :1081"
+    echo "󰒄 :1081"
+    echo "#00ff00"
+else
+    echo "󰒃 :1081"
+    echo "󰒃 :1081"
+    echo "#ff0000"
+fi
