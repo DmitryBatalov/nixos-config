@@ -50,6 +50,7 @@ in
     pkgs.libreoffice-qt6-fresh
     (import ../../home/programs/rider-fhs.nix { inherit pkgs unstable; })
     pkgs.freecad
+    pkgs.bambu-studio
     pkgs.obsidian
     pkgs.vlc
     nixvim-config.packages.${pkgs.stdenv.hostPlatform.system}.default
