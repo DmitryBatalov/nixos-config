@@ -156,6 +156,14 @@ in
   xdg = {
     enable = true;
     autostart.enable = true;
+    desktopEntries.chromium-proxy = {
+      name = "Chromium (Proxy)";
+      exec = "chromium --proxy-server=\"socks5://127.0.0.1:1081\" %U";
+      icon = "chromium";
+      comment = "Chromium Web Browser with SOCKS proxy via SSH tunnel";
+      categories = [ "Network" "WebBrowser" ];
+      terminal = false;
+    };
     desktopEntries.rider = {
       name = "Rider";
       exec = "rider";
