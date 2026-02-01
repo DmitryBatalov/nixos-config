@@ -7,6 +7,6 @@ scrot -z "$PICTURE"
 magick "$PICTURE" -blur "$BLUR" "$PICTURE"
 
 export XSECURELOCK_SAVER="$HOME/.config/i3/scripts/blur-saver"
-xsecurelock
+xsecurelock 2>/dev/null
 
 rm -f "$PICTURE"
