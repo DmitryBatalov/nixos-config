@@ -33,7 +33,7 @@
         {
           default = pkgs.writeShellScriptBin "claude" ''
             export PROXYCHAINS_CONF_FILE=${proxychainsConf}
-            exec ${pkgs.proxychains-ng}/bin/proxychains4 ${pkgs.claude-code}/bin/claude "$@"
+            exec ${pkgs.proxychains-ng}/bin/proxychains4 -q ${pkgs.claude-code}/bin/claude "$@"
           '';
         });
     };

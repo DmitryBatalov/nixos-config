@@ -13,6 +13,7 @@
         cat > /tmp/proxychains.conf <<EOF
         # Proxychains config
         strict_chain
+        quiet_mode
         proxy_dns
         remote_dns_subnet 224
         tcp_read_time_out 15000
