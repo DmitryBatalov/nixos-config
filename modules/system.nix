@@ -77,6 +77,10 @@
     gnupg.agent = {
       enable = true;
       enableSSHSupport = true;
+      settings = {
+        default-cache-ttl-ssh = 86400;
+        max-cache-ttl-ssh = 86400;
+      };
     };
   };
 
