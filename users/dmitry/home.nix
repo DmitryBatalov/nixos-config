@@ -19,6 +19,7 @@ in
 
     ../../home/i3
     ../../home/rofi
+    ../../home/tmux
     ../../home/kube
   ];
 
@@ -67,6 +68,7 @@ in
       enable = true;
       sessionVariables = {
         EDITOR = "nvim";
+        TERMINAL = "alacritty";
       };
       shellAliases = {
         lg = "lazygit";
