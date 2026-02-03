@@ -51,6 +51,7 @@
         nix
         lua
         fsharp
+        tlaplus
         typst
         markdown
       ];
