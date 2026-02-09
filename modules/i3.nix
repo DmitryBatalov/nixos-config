@@ -3,6 +3,8 @@
   environment.pathsToLink = ["/libexec"]; # links /libexec from derivations to /run/current-system/sw
 
   services = {
+    gvfs.enable = true; # Mount, trash, and other functionalities for Thunar
+
     displayManager = {
       defaultSession = "none+i3";
       # gdm.enable = true;
