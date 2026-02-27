@@ -77,6 +77,9 @@ in
         dcs = "docker compose stop";
         dcr = "docker compose stop && docker compose up -d";
       };
+      initExtra = ''
+        cdtmp() { cd "$(mktemp -d)"; }
+      '';
     };
 
     direnv = {
