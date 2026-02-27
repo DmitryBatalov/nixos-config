@@ -107,6 +107,7 @@
     wget
     curl
     git
+    jq
     tree
     sysstat
     lm_sensors # for `sensors` command
