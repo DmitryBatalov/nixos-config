@@ -25,6 +25,7 @@
             strict_chain
             quiet_mode
             proxy_dns
+            localnet 127.0.0.0/255.0.0.0
 
             [ProxyList]
             socks5 127.0.0.1 1081

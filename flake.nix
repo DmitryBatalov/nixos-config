@@ -9,7 +9,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixvim-config.url = "path:./home/dev/nixvim";
-    claude-config.url = "path:./home/dev/cluade";
+    claude-config.url = "path:./home/dev/claude";
   };
 
   outputs = inputs @ {
