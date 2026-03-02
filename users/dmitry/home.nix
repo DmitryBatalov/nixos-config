@@ -76,6 +76,7 @@ in
         dcd = "docker compose down";
         dcs = "docker compose stop";
         dcr = "docker compose stop && docker compose up -d";
+        cc = "claude";
       };
       initExtra = ''
         cdtmp() { cd "$(mktemp -d)"; }
