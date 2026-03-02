@@ -44,6 +44,7 @@
           xorg.xdpyinfo # get screen information
           sysstat # get system information
           xclip
+          xkblayout-state # keyboard layout indicator for i3blocks
           file-roller # An archive manager from GNOME
         ];
       };
