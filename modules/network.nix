@@ -19,8 +19,7 @@
     networkmanager.dispatcherScripts = [
       {
         # Disable WiFi when ethernet is connected with working gateway, re-enable when disconnected
-        source = pkgs.writeText "wifi-toggle" ''
-          #!/usr/bin/env sh
+        source = pkgs.writeShellScript "wifi-toggle" ''
           IFACE="$1"
           ACTION="$2"
           NMCLI="${pkgs.networkmanager}/bin/nmcli"
@@ -32,7 +31,7 @@
 
           if [ "$ACTION" = "up" ]; then
             GATEWAY="$($NMCLI -t -f IP4.GATEWAY dev show "$IFACE" 2>/dev/null | head -1 | cut -d: -f2)"
-            if [ -n "$GATEWAY" ] && ${pkgs.iputils}/bin/ping -c 1 -W 2 -I "$IFACE" "$GATEWAY" > /dev/null 2>&1; then
+            if [ -n "$GATEWAY" ]; then
               $NMCLI radio wifi off
             fi
           elif [ "$ACTION" = "down" ]; then
