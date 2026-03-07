@@ -10,6 +10,12 @@
     # Git UI inside Neovim (<leader>lg)
     lazygit.enable = true;
 
+    # Side-by-side git diff viewer (:DiffviewOpen, :DiffviewFileHistory)
+    diffview.enable = true;
+
+    # Git change indicators in the sign column + inline hunk operations
+    gitsigns.enable = true;
+
     # Displays LSP progress notifications in the bottom right corner
     fidget.enable = true;
 
@@ -125,6 +131,10 @@
           {
             __unkeyed-1 = "<leader>l";
             group = "[L]SP";
+          }
+          {
+            __unkeyed-1 = "<leader>g";
+            group = "[G]it";
           }
           {
             __unkeyed-1 = "<leader>h";

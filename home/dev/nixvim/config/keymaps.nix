@@ -171,6 +171,43 @@
         desc = "[L]SP Load [S]olution";
       };
     }
+    # Gitsigns hunk navigation
+    {
+      mode = "n";
+      key = "]h";
+      action.__raw = "function() require('gitsigns').nav_hunk('next') end";
+      options.desc = "Next [H]unk";
+    }
+    {
+      mode = "n";
+      key = "[h";
+      action.__raw = "function() require('gitsigns').nav_hunk('prev') end";
+      options.desc = "Previous [H]unk";
+    }
+    {
+      mode = "n";
+      key = "<leader>hs";
+      action.__raw = "function() require('gitsigns').stage_hunk() end";
+      options.desc = "Git [H]unk [S]tage";
+    }
+    {
+      mode = "n";
+      key = "<leader>hr";
+      action.__raw = "function() require('gitsigns').reset_hunk() end";
+      options.desc = "Git [H]unk [R]eset";
+    }
+    {
+      mode = "n";
+      key = "<leader>hp";
+      action.__raw = "function() require('gitsigns').preview_hunk() end";
+      options.desc = "Git [H]unk [P]review";
+    }
+    {
+      mode = "n";
+      key = "<leader>hb";
+      action.__raw = "function() require('gitsigns').blame_line({ full = true }) end";
+      options.desc = "Git [H]unk [B]lame";
+    }
     # Open LazyGit
     {
       mode = "n";
@@ -178,6 +215,31 @@
       action = "<cmd>LazyGit<CR>";
       options = {
         desc = "[L]azy[G]it";
+      };
+    }
+    # Diffview
+    {
+      mode = "n";
+      key = "<leader>gd";
+      action = "<cmd>DiffviewOpen<CR>";
+      options = {
+        desc = "[G]it [D]iff";
+      };
+    }
+    {
+      mode = "n";
+      key = "<leader>gh";
+      action = "<cmd>DiffviewFileHistory %<CR>";
+      options = {
+        desc = "[G]it File [H]istory";
+      };
+    }
+    {
+      mode = "n";
+      key = "<leader>gq";
+      action = "<cmd>DiffviewClose<CR>";
+      options = {
+        desc = "[G]it Diff [Q]uit";
       };
     }
     # Markdown Preview
