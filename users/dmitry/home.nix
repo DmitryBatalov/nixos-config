@@ -17,7 +17,7 @@ in
   imports = [
     ../../home/core.nix
 
-    ../../home/i3
+    ../../home/sway
     ../../home/rofi
     ../../home/tmux
     ../../home/kube
@@ -41,6 +41,7 @@ in
 
   home.packages = [
     pkgs.flameshot
+    pkgs.satty
     pkgs.telegram-desktop
     pkgs.libreoffice-qt6-fresh
     (import ../../home/programs/rider-fhs.nix { inherit pkgs unstable; })

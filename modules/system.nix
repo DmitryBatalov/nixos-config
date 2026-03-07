@@ -112,10 +112,8 @@
     sysstat
     lm_sensors # for `sensors` command
 
-    # minimal screen capture tool, used by i3 blur lock to take a screenshot
-    # print screen key is also bound to this tool in i3 config
-    scrot
-    imagemagick # used by blur-lock script to blur the screenshot
+    grim # screenshot tool for Wayland (sway)
+    slurp # region selector for Wayland (sway)
     neofetch
     xfce.thunar # xfce4's file manager
     pavucontrol
@@ -126,9 +124,9 @@
 
   # Enable sound with pipewire.
   # services.pulseaudio.enable = false;
-  #services.power-profiles-daemon = {
-  #  enable = true;
-  #};
+  services.power-profiles-daemon = {
+    enable = true;
+  };
   # security.polkit.enable = true;
 
   hardware.bluetooth.enable = true;
@@ -139,14 +137,14 @@
     control = "sufficient";
     settings = {
       cue = true;
-      timeout = 30;
+      timeout = 10;
     };
   };
 
   security.pam.services.login.u2fAuth = true;
   security.pam.services.sudo.u2fAuth = true;
-  security.pam.services.i3lock.u2fAuth = lib.mkForce true;
   security.pam.services.xsecurelock.u2fAuth = true;
+  security.pam.services.swaylock.u2fAuth = true;
 
   security.rtkit.enable = true;
   services = {

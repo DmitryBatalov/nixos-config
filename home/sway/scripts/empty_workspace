@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+MAX_DESKTOPS=20
+
+WORKSPACES=$(seq -s '\n' 1 1 ${MAX_DESKTOPS})
+
+USED=$(swaymsg -t get_workspaces -r | jq '.[].num')
+
+EMPTY_WORKSPACE=$( (echo "$USED"; echo -e ${WORKSPACES}) | sort -n | uniq -u | head -n 1)
+
+swaymsg workspace ${EMPTY_WORKSPACE}

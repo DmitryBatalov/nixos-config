@@ -1,0 +1,328 @@
+# Sway config — ported from i3
+
+#######################
+# config starts here: #
+#######################
+
+# Font for window titles.
+font pango: JetBrains Mono Nerd Font 10
+
+# set the mod key to the winkey:
+set $mod Mod4
+
+# Define workspace names
+set $ws1 "1"
+set $ws2 "2"
+set $ws3 "3"
+set $ws4 "4"
+set $ws5 "5"
+set $ws6 "6"
+set $ws7 "7"
+set $ws8 "8"
+set $ws9 "9"
+set $ws10 "10"
+
+#####################
+# workspace layout: #
+#####################
+
+# default tiling mode:
+workspace_layout default
+
+##############################
+# extra options for windows: #
+##############################
+
+# border indicator on windows:
+default_border pixel 2
+
+# Set inner/outer gaps
+gaps inner 4
+gaps outer 2
+
+# Use Mouse+$mod to drag floating windows to their wanted position
+floating_modifier $mod
+
+# switch/iterate between workspaces
+bindsym $mod+Tab workspace next
+bindsym $mod+Shift+Tab workspace prev
+
+# switch to workspace
+bindsym $mod+1    workspace  $ws1
+bindsym $mod+2    workspace  $ws2
+bindsym $mod+3    workspace  $ws3
+bindsym $mod+4    workspace  $ws4
+bindsym $mod+5    workspace  $ws5
+bindsym $mod+6    workspace  $ws6
+bindsym $mod+7    workspace  $ws7
+bindsym $mod+8    workspace  $ws8
+bindsym $mod+9    workspace  $ws9
+bindsym $mod+0    workspace  $ws10
+
+# move focused container to workspace
+bindsym $mod+Shift+1    move container to workspace  $ws1
+bindsym $mod+Shift+2    move container to workspace  $ws2
+bindsym $mod+Shift+3    move container to workspace  $ws3
+bindsym $mod+Shift+4    move container to workspace  $ws4
+bindsym $mod+Shift+5    move container to workspace  $ws5
+bindsym $mod+Shift+6    move container to workspace  $ws6
+bindsym $mod+Shift+7    move container to workspace  $ws7
+bindsym $mod+Shift+8    move container to workspace  $ws8
+bindsym $mod+Shift+9    move container to workspace  $ws9
+bindsym $mod+Shift+0    move container to workspace  $ws10
+
+
+# resize window (you can also use the mouse for that)
+mode "resize" {
+        bindsym j resize shrink width 10 px or 10 ppt
+        bindsym k resize grow height 10 px or 10 ppt
+        bindsym l resize shrink height 10 px or 10 ppt
+        bindsym semicolon resize grow width 10 px or 10 ppt
+
+        # same bindings, but for the arrow keys
+        bindsym Left resize shrink width 10 px or 10 ppt
+        bindsym Down resize grow height 10 px or 10 ppt
+        bindsym Up resize shrink height 10 px or 10 ppt
+        bindsym Right resize grow width 10 px or 10 ppt
+
+        # back to normal: Enter or Escape or $mod+r
+        bindsym Return mode "default"
+        bindsym Escape mode "default"
+        bindsym $mod+r mode "default"
+}
+
+bindsym $mod+r mode "resize"
+
+######################################
+# keybindings for different actions: #
+######################################
+
+# start a terminal
+bindsym $mod+Return exec ${TERMINAL:-alacritty}
+
+# open tmux project session picker
+bindsym $mod+Shift+t exec ~/.config/tmux/scripts/tmux-sessions.sh
+
+# kill focused window
+bindsym $mod+q kill
+
+# exit-menu
+bindsym $mod+Shift+e exec ~/.config/sway/scripts/powermenu
+
+# Lock the system
+bindsym $mod+l exec ~/.config/sway/scripts/blur-lock
+
+# reload the configuration file
+bindsym $mod+Shift+c reload
+
+# sway has no in-place restart; reload is the equivalent
+bindsym $mod+Shift+r reload
+
+# keybinding in fancy rofi (automated):
+bindsym F1 exec ~/.config/sway/scripts/keyhint-2
+
+# Backlight control
+bindsym XF86MonBrightnessUp exec brightnessctl set +10% && notify-send "Brightness - $(brightnessctl -m | cut -d, -f4)"
+bindsym XF86MonBrightnessDown exec brightnessctl set 10%- && notify-send "Brightness - $(brightnessctl -m | cut -d, -f4)"
+
+# change focus
+bindsym $mod+j focus left
+bindsym $mod+k focus down
+bindsym $mod+b focus up
+bindsym $mod+semicolon focus right
+
+# alternatively, you can use the cursor keys:
+bindsym $mod+Left focus left
+bindsym $mod+Down focus down
+bindsym $mod+Up focus up
+bindsym $mod+Right focus right
+
+# move focused window
+bindsym $mod+Shift+j move left
+bindsym $mod+Shift+k move down
+bindsym $mod+Shift+b move up
+bindsym $mod+Shift+semicolon move right
+
+# alternatively, you can use the cursor keys:
+bindsym $mod+Shift+Left move left
+bindsym $mod+Shift+Down move down
+bindsym $mod+Shift+Up move up
+bindsym $mod+Shift+Right move right
+
+# split in horizontal orientation
+bindsym $mod+h split h
+
+# split in vertical orientation
+bindsym $mod+v split v
+
+# enter fullscreen mode for the focused container
+bindsym $mod+f fullscreen toggle
+
+# change container layout (stacked, tabbed, toggle split)
+bindsym $mod+s layout stacking
+bindsym $mod+w layout tabbed
+bindsym $mod+e layout toggle split
+
+# toggle tiling / floating
+bindsym $mod+Shift+space floating toggle
+
+# change focus between tiling / floating windows
+bindsym $mod+space focus mode_toggle
+
+# focus the parent container
+bindsym $mod+a focus parent
+
+# open new empty workspace
+bindsym $mod+Shift+n exec ~/.config/sway/scripts/empty_workspace
+
+# Multimedia Keys
+
+# volume (waybar handles its own updates, no signal needed)
+bindsym XF86AudioRaiseVolume exec wpctl set-volume @DEFAULT_SINK@ +5%
+bindsym XF86AudioLowerVolume exec wpctl set-volume @DEFAULT_SINK@ -5%
+bindsym XF86AudioMute exec wpctl set-mute @DEFAULT_SINK@ toggle
+
+# audio control
+bindsym XF86AudioPlay exec playerctl play
+bindsym XF86AudioPause exec playerctl pause
+bindsym XF86AudioNext exec playerctl next
+bindsym XF86AudioPrev exec playerctl previous
+
+# Redirect sound to headphones
+## App shortcuts
+bindsym $mod+n exec thunar
+bindsym $mod+o exec obsidian
+
+# Power Profiles menu switcher (rofi)
+bindsym $mod+Shift+p exec ~/.config/sway/scripts/power-profiles
+
+
+##########################################
+# configuration for workspace behaviour: #
+##########################################
+
+
+# bind program to workspace and focus to them on startup:
+# class matchers for XWayland apps
+assign [class="jetbrains-rider"] $ws1
+assign [class="Terminal"] $ws1
+assign [class="(?i)firefox"] $ws2
+assign [class="chromium"] $ws2
+assign [class="Thunar"] $ws4
+assign [class="TelegramDesktop"] $ws5
+assign [class="(?i)obsidian"] $ws8
+assign [class="Freelens"] $ws9
+
+# app_id matchers for Wayland-native apps
+assign [app_id="firefox"] $ws2
+assign [app_id="chromium"] $ws2
+assign [app_id="thunar"] $ws4
+assign [app_id="org.telegram.desktop"] $ws5
+assign [app_id="obsidian"] $ws8
+
+# automatic set focus new window if it opens on another workspace:
+for_window [class=Terminal] focus
+for_window [class=(?i)firefox] focus
+for_window [class=Thunar] focus
+for_window [class=Thunderbird] focus
+for_window [class=TelegramDesktop] focus
+for_window [class=Freelens] focus
+for_window [class=(?i)obsidian] focus
+
+for_window [app_id="firefox"] focus
+for_window [app_id="thunar"] focus
+for_window [app_id="org.telegram.desktop"] focus
+for_window [app_id="obsidian"] focus
+
+#############################################
+# autostart applications/services on login: #
+#############################################
+
+# idle lock: lock after 300s, screen off after 360s
+exec swayidle -w \
+    timeout 300 '~/.config/sway/scripts/blur-lock' \
+    timeout 360 'swaymsg "output * power off"' \
+    resume 'swaymsg "output * power on"' \
+    before-sleep '~/.config/sway/scripts/blur-lock'
+
+##################
+# floating rules #
+##################
+
+for_window [class="Yad" instance="yad"] floating enable
+for_window [class="Galculator" instance="galculator"] floating enable
+for_window [class="Blueberry.py" instance="blueberry.py"] floating enable
+for_window [class="Xsane" instance="xsane"] floating enable
+for_window [class="Pavucontrol" instance="pavucontrol"] floating enable
+for_window [app_id="pavucontrol"] floating enable
+for_window [class="qt5ct" instance="qt5ct"] floating enable
+for_window [class="Bluetooth-sendto" instance="bluetooth-sendto"] floating enable
+for_window [class="Pamac-manager"] floating enable
+for_window [window_role="About"] floating enable
+
+# set border of floating window
+for_window [class="urxvt"] border pixel 1
+
+######################################
+# color settings for bar and windows #
+######################################
+
+# Define colors variables:
+set $darkbluetrans	#08052be6
+set $darkblue		#08052b
+set $lightblue		#5294e2
+set $urgentred		#e53935
+set $white		#ffffff
+set $black		#000000
+set $purple		#e345ff
+set $darkgrey		#383c4a
+set $grey		#b0b5bd
+set $mediumgrey		#8b8b8b
+set $yellowbrown	#e1b700
+
+# define colors for windows:
+#class		        	border		bground		text		indicator	child_border
+client.focused		    	$lightblue	$darkblue	$white		$lightblue	$lightblue
+client.unfocused	    	$darkblue	$darkblue	$grey		$darkgrey	$darkgrey
+client.focused_inactive		$darkblue	$darkblue	$grey		$black		$black
+client.urgent		    	$urgentred	$urgentred	$white		$yellowbrown	$yellowbrown
+
+############################################
+# bar settings (waybar) #
+############################################
+
+exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=sway
+exec waybar
+
+#####################################
+# Lid switch: disable laptop screen  #
+#####################################
+
+bindswitch --reload --locked lid:on  output eDP-1 disable
+bindswitch --reload --locked lid:off output eDP-1 enable
+
+#####################################
+# Input configuration #
+#####################################
+
+input type:keyboard {
+    xkb_layout us,ru
+    xkb_options grp:win_space_toggle
+    repeat_delay 200
+    repeat_rate 35
+}
+
+#####################################
+# Application menu handled by rofi: #
+#####################################
+
+bindsym $mod+d exec rofi -modi drun -show drun \
+		-config ~/.config/rofi/rofidmenu.rasi
+
+bindsym $mod+Shift+d exec rofi -modi run -show run \
+		-config ~/.config/rofi/rofidmenu.rasi
+
+bindsym $mod+t exec rofi -show window \
+		-config ~/.config/rofi/rofidmenu.rasi
+
+bindsym Print exec grim -g "$(slurp)" - | satty -f -

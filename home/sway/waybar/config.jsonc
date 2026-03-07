@@ -1,0 +1,111 @@
+{
+    "layer": "top",
+    "position": "top",
+    "height": 24,
+
+    "modules-left": ["sway/workspaces", "sway/mode"],
+    "modules-center": [],
+    "modules-right": [
+        "disk",
+        "memory",
+        "cpu",
+        "temperature",
+        "custom/ssh-tunnel",
+        "pulseaudio",
+        "sway/language",
+        "custom/ppd-menu",
+        "clock",
+        "custom/powermenu",
+        "tray"
+    ],
+
+    "sway/workspaces": {
+        "disable-scroll": false,
+        "all-outputs": true,
+        "format": "{icon}",
+        "format-icons": {
+            "1": "",
+            "2": "",
+            "3": "",
+            "4": "",
+            "5": "",
+            "default": ""
+        }
+    },
+
+    "sway/mode": {
+        "format": "{}"
+    },
+
+    "disk": {
+        "format": "  {free}",
+        "path": "/",
+        "interval": 30
+    },
+
+    "memory": {
+        "format": " {percentage}%",
+        "interval": 2,
+        "tooltip-format": "{used:0.1f}G / {total:0.1f}G"
+    },
+
+    "cpu": {
+        "format": " {usage:02}%",
+        "interval": 2
+    },
+
+    "temperature": {
+        "format": "{icon} {temperatureC}°C",
+        "format-icons": ["", "", "", "", ""],
+        "critical-threshold": 90,
+        "warning-threshold": 70,
+        "interval": 30
+    },
+
+    "custom/ssh-tunnel": {
+        "exec": "$HOME/.config/sway/scripts/ssh-tunnel-waybar",
+        "on-click": "$HOME/.config/sway/scripts/ssh-tunnel-toggle",
+        "return-type": "json",
+        "interval": 5
+    },
+
+    "pulseaudio": {
+        "format": "{icon} {volume}%",
+        "format-muted": " MUTE",
+        "format-icons": {
+            "default": ["", "", ""]
+        },
+        "on-click": "pavucontrol",
+        "scroll-step": 5
+    },
+
+    "sway/language": {
+        "format": "{}",
+        "tooltip": false
+    },
+
+    "custom/ppd-menu": {
+        "exec": "case $(powerprofilesctl get) in performance) echo '{\"text\":\"\",\"class\":\"performance\"}' ;; power-saver) echo '{\"text\":\"\",\"class\":\"power-saver\"}' ;; *) echo '{\"text\":\"\",\"class\":\"balanced\"}' ;; esac",
+        "return-type": "json",
+        "interval": 5,
+        "on-click": "$HOME/.config/sway/scripts/power-profiles",
+        "tooltip": false
+    },
+
+    "clock": {
+        "format": "{:%a %d %b %H:%M:%S}",
+        "interval": 1,
+        "tooltip-format": "<tt>{calendar}</tt>"
+    },
+
+    "custom/powermenu": {
+        "format": " ",
+        "on-click": "$HOME/.config/sway/scripts/powermenu",
+        "tooltip": false
+    },
+
+    "tray": {
+        "icon-size": 16,
+        "spacing": 8
+    }
+}

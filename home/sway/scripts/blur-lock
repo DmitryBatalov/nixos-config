@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+swaylock \
+    --screenshots \
+    --effect-blur 8x3 \
+    --indicator-radius 100 \
+    --indicator-thickness 10 \
+    --ring-color 383c4a \
+    --key-hl-color 5294e2 \
+    --inside-color 00000088 \
+    --separator-color 00000000 \
+    --text-color ffffff

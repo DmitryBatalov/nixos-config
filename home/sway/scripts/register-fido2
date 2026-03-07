@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+KEY_DIR="$HOME/.config/Yubico"
+KEY_FILE="$KEY_DIR/u2f_keys"
+
+# Find FIDO2 device
+DEVICE=$(fido2-token -L 2>/dev/null | head -1 | cut -d: -f1)
+if [ -z "$DEVICE" ]; then
+  echo "No FIDO2 device found. Insert your RUTOKEN and try again."
+  exit 1
+fi
+echo "Found FIDO2 device: $DEVICE"
+
+# Check if PIN is set, offer to set one if not
+if fido2-token -I "$DEVICE" 2>/dev/null | grep -q "noclientPin"; then
+  echo "No PIN set on this device. Setting PIN now..."
+  fido2-token -S "$DEVICE"
+  echo "PIN set successfully."
+else
+  echo "PIN is already configured on this device."
+fi
+
+mkdir -p "$KEY_DIR"
+
+if [ -f "$KEY_FILE" ]; then
+  echo "Key file already exists at $KEY_FILE"
+  echo "To re-register, delete it first: rm $KEY_FILE"
+  exit 1
+fi
+
+echo ""
+echo "Registering key for PAM authentication..."
+echo "Enter your FIDO2 PIN and touch the device when prompted."
+pamu2fcfg -o pam://nixos -i pam://nixos --pin-verification > "$KEY_FILE"
+echo "Key registered successfully at $KEY_FILE"

@@ -1,0 +1,71 @@
+* {
+    font-family: "JetBrainsMono Nerd Font";
+    font-size: 13px;
+    min-height: 0;
+}
+
+window#waybar {
+    background-color: #383c4a;
+    color: #ffffff;
+}
+
+#workspaces button {
+    padding: 0 5px;
+    color: #b0b5bd;
+    border: none;
+    border-radius: 0;
+}
+
+#workspaces button.focused {
+    background-color: #b0b5bd;
+    color: #383c4a;
+}
+
+#workspaces button.urgent {
+    background-color: #e53935;
+    color: #ffffff;
+}
+
+#mode {
+    background-color: #e53935;
+    color: #ffffff;
+    padding: 0 4px;
+}
+
+#disk,
+#memory,
+#cpu,
+#temperature,
+#custom-ssh-tunnel,
+#pulseaudio,
+#language,
+#custom-ppd-menu,
+#clock,
+#custom-powermenu,
+#tray {
+    padding: 0 6px;
+}
+
+#custom-ssh-tunnel.connected {
+    color: #00ff00;
+}
+
+#custom-ssh-tunnel.disconnected {
+    color: #ff0000;
+}
+
+#temperature.critical {
+    color: #ff0000;
+}
+
+#temperature.warning {
+    color: #fffc00;
+}
+
+#custom-ppd-menu.performance { color: #e53935; }
+#custom-ppd-menu.balanced { color: #407437; }
+#custom-ppd-menu.power-saver { color: #5294e2; }
+
+#pulseaudio.muted {
+    color: #8b8b8b;
+}

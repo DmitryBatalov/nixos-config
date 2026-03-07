@@ -8,7 +8,7 @@
 }: {
   imports = [
     ../../modules/system.nix
-    ../../modules/i3.nix
+    ../../modules/sway.nix
     ../../modules/docker.nix
     ../../modules/network.nix
     ../../modules/printers.nix
