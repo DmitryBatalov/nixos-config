@@ -1,37 +1,17 @@
 * {
     font-family: "JetBrainsMono Nerd Font";
     font-size: 13px;
+    border: none;
+    border-radius: 0;
     min-height: 0;
 }
 
 window#waybar {
-    background-color: #383c4a;
+    background: transparent;
     color: #ffffff;
 }
 
-#workspaces button {
-    padding: 0 5px;
-    color: #b0b5bd;
-    border: none;
-    border-radius: 0;
-}
-
-#workspaces button.focused {
-    background-color: #b0b5bd;
-    color: #383c4a;
-}
-
-#workspaces button.urgent {
-    background-color: #e53935;
-    color: #ffffff;
-}
-
-#mode {
-    background-color: #e53935;
-    color: #ffffff;
-    padding: 0 4px;
-}
-
+/* Default pill style for all modules */
 #disk,
 #memory,
 #cpu,
@@ -43,9 +23,67 @@ window#waybar {
 #clock,
 #custom-powermenu,
 #tray {
-    padding: 0 6px;
+    background-color: #383c4a;
+    border-radius: 10px;
+    padding: 0 12px;
+    margin: 2px 2px;
+    color: #ffffff;
 }
 
+/* System stats grouped pill: disk | memory | cpu | temperature */
+#disk {
+    border-radius: 10px 0 0 10px;
+    margin-right: 0;
+}
+
+#memory,
+#cpu {
+    border-radius: 0;
+    margin-left: 0;
+    margin-right: 0;
+    border-left: 1px solid #5c6073;
+}
+
+#temperature {
+    border-radius: 0 10px 10px 0;
+    margin-left: 0;
+    border-left: 1px solid #5c6073;
+}
+
+/* Workspaces pill */
+#workspaces {
+    background-color: #383c4a;
+    border-radius: 10px;
+    margin: 2px 2px;
+}
+
+#workspaces button {
+    padding: 0 5px;
+    color: #b0b5bd;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+}
+
+#workspaces button.focused {
+    color: #ffffff;
+}
+
+#workspaces button.urgent {
+    background-color: #e53935;
+    color: #ffffff;
+}
+
+/* Mode */
+#mode {
+    background-color: #e53935;
+    color: #ffffff;
+    border-radius: 10px;
+    padding: 0 12px;
+    margin: 2px 2px;
+}
+
+/* State colors */
 #custom-ssh-tunnel.connected {
     color: #00ff00;
 }

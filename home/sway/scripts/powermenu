@@ -47,7 +47,7 @@ menu=(
   [" Reboot"]="systemctl reboot"
   [" Suspend"]="systemctl suspend"
   [" Hibernate"]="systemctl hibernate"
-  [" Lock"]="~/.config/sway/scripts/blur-lock"
+  [" Lock"]="~/.config/sway/scripts/lock"
   [" Logout"]="swaymsg exit"
   [" Cancel"]=""
 )

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 swaylock \
-    --screenshots \
-    --effect-blur 8x3 \
+    --image ~/.config/sway/wallpaper.png \
+    --scaling fill \
     --indicator-radius 100 \
     --indicator-thickness 10 \
     --ring-color 383c4a \

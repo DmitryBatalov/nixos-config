@@ -10,6 +10,9 @@ font pango: JetBrains Mono Nerd Font 10
 # set the mod key to the winkey:
 set $mod Mod4
 
+# Wallpaper
+output * bg ~/.config/sway/wallpaper.png fill
+
 # Define workspace names
 set $ws1 "1"
 set $ws2 "2"
@@ -110,7 +113,7 @@ bindsym $mod+q kill
 bindsym $mod+Shift+e exec ~/.config/sway/scripts/powermenu
 
 # Lock the system
-bindsym $mod+l exec ~/.config/sway/scripts/blur-lock
+bindsym $mod+l exec ~/.config/sway/scripts/lock
 
 # reload the configuration file
 bindsym $mod+Shift+c reload
@@ -240,10 +243,10 @@ for_window [app_id="obsidian"] focus
 
 # idle lock: lock after 300s, screen off after 360s
 exec swayidle -w \
-    timeout 300 '~/.config/sway/scripts/blur-lock' \
+    timeout 300 '~/.config/sway/scripts/lock' \
     timeout 360 'swaymsg "output * power off"' \
     resume 'swaymsg "output * power on"' \
-    before-sleep '~/.config/sway/scripts/blur-lock'
+    before-sleep '~/.config/sway/scripts/lock'
 
 ##################
 # floating rules #

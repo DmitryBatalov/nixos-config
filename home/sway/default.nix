@@ -4,8 +4,9 @@
   ...
 }: {
   home.file = {
+    ".config/sway/wallpaper.png".source = "${pkgs.nixos-artwork.wallpapers.simple-dark-gray-bottom.src}";
     ".config/sway/config".source = ./config;
-    ".config/sway/scripts/blur-lock" = { source = ./scripts/blur-lock; executable = true; };
+    ".config/sway/scripts/lock" = { source = ./scripts/lock; executable = true; };
     ".config/sway/scripts/empty_workspace" = { source = ./scripts/empty_workspace; executable = true; };
     ".config/sway/scripts/keyhint-2" = { source = ./scripts/keyhint-2; executable = true; };
     ".config/sway/scripts/power-profiles" = { source = ./scripts/power-profiles; executable = true; };
