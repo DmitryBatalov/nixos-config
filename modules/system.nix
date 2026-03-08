@@ -167,6 +167,48 @@
       # use the example session manager (no others are packaged yet so this is enabled by default,
       # no need to redefine it in your config for now)
       #media-session.enable = true;
+
+      wireplumber.extraConfig = {
+        # Boost Bluetooth sink priority so it's always preferred
+        "10-bluetooth-priority" = {
+          "monitor.bluez.rules" = [{
+            matches = [{ "node.name" = "~bluez_output.*"; }];
+            actions.update-props."priority.session" = 2000;
+          }];
+        };
+
+        # Force Speaker profile instead of Headphones on the laptop sound card
+        "10-laptop-speaker-profile" = {
+          "monitor.alsa.rules" = [{
+            matches = [{ "device.name" = "alsa_card.pci-0000_00_1f.3-platform-skl_hda_dsp_generic"; }];
+            actions.update-props = {
+              "api.alsa.use-acp" = true;
+              "api.acp.auto-profile" = false;
+              "device.profile" = "HiFi (HDMI1, HDMI2, HDMI3, Mic1, Mic2, Speaker)";
+            };
+          }];
+        };
+
+        # Headphones (3.5mm jack) preferred over built-in speakers
+        "10-laptop-headphones-defaults" = {
+          "monitor.alsa.rules" = [{
+            matches = [{ "node.name" = "~alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__Headphones__sink"; }];
+            actions.update-props = {
+              "priority.session" = 800;
+            };
+          }];
+        };
+
+        # Lower laptop speaker priority so BT, headphones, and dock are preferred
+        "10-laptop-speaker-defaults" = {
+          "monitor.alsa.rules" = [{
+            matches = [{ "node.name" = "~alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__Speaker__sink"; }];
+            actions.update-props = {
+              "priority.session" = 500;
+            };
+          }];
+        };
+      };
     };
 
     udev.packages = with pkgs; [gnome-settings-daemon];
