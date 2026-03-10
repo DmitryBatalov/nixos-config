@@ -296,6 +296,7 @@ client.urgent		    	$urgentred	$urgentred	$white		$yellowbrown	$yellowbrown
 
 exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=sway
 exec waybar
+exec swaykbdd
 
 #####################################
 # Lid switch: disable laptop screen  #

@@ -20,6 +20,7 @@
       acpi
       file-roller
       playerctl
+      swaykbdd
     ];
     extraSessionCommands = ''
       export MOZ_ENABLE_WAYLAND=1
