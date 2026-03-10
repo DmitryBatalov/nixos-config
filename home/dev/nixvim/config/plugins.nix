@@ -1,6 +1,66 @@
 { pkgs, ... }:
 {
   plugins = {
+    # Start screen dashboard
+    alpha = {
+      enable = true;
+      settings.layout = let
+        padding = val: {
+          type = "padding";
+          val = val;
+        };
+        button = shortcut: text: action: {
+          type = "button";
+          val = text;
+          on_press.__raw = "function() vim.cmd('${action}') end";
+          opts = {
+            shortcut = shortcut;
+            position = "center";
+            cursor = 3;
+            width = 50;
+            align_shortcut = "right";
+            keymap = [
+              "n"
+              shortcut
+              "<cmd>${action}<CR>"
+              {
+                noremap = true;
+                silent = true;
+                nowait = true;
+              }
+            ];
+          };
+        };
+      in [
+        (padding 4)
+        {
+          type = "text";
+          val = [
+            "  ███╗   ██╗██╗██╗  ██╗██╗   ██╗██╗███╗   ███╗  "
+            "  ████╗  ██║██║╚██╗██╔╝██║   ██║██║████╗ ████║  "
+            "  ██╔██╗ ██║██║ ╚███╔╝ ██║   ██║██║██╔████╔██║  "
+            "  ██║╚██╗██║██║ ██╔██╗ ╚██╗ ██╔╝██║██║╚██╔╝██║  "
+            "  ██║ ╚████║██║██╔╝ ██╗ ╚████╔╝ ██║██║ ╚═╝ ██║  "
+            "  ╚═╝  ╚═══╝╚═╝╚═╝  ╚═╝  ╚═══╝ ╚═╝╚═╝     ╚═╝  "
+          ];
+          opts = {
+            position = "center";
+            hl = "Type";
+          };
+        }
+        (padding 2)
+        (button "f" "  Find file" "Telescope find_files")
+        (padding 1)
+        (button "r" "  Recent files" "Telescope oldfiles")
+        (padding 1)
+        (button "g" "  Grep text" "Telescope live_grep")
+        (padding 1)
+        (button "k" "  Keymaps" "Telescope keymaps")
+        (padding 1)
+        (button "q" "  Quit" "qa")
+      ];
+    };
+
     # File type icons for various plugins
     web-devicons.enable = true;
 
@@ -60,6 +120,8 @@
         tlaplus
         typst
         markdown
+        yaml
+        json
       ];
     };
 
@@ -360,6 +422,30 @@
           settings = {
             completion = {
               callSnippet = "Replace";
+            };
+          };
+        };
+
+        # YAML lsp (with OpenAPI/Swagger schema support)
+        yamlls = {
+          enable = true;
+          settings = {
+            yaml = {
+              schemas = {
+                "https://raw.githubusercontent.com/OAI/OpenAPI-Specification/main/schemas/v3.0/schema.json" = [
+                  "openapi*.yaml"
+                  "openapi*.yml"
+                  "swagger*.yaml"
+                  "swagger*.yml"
+                ];
+                "https://raw.githubusercontent.com/OAI/OpenAPI-Specification/main/schemas/v3.1/schema.json" = [
+                  "*.openapi.yaml"
+                  "*.openapi.yml"
+                ];
+              };
+              validate = true;
+              completion = true;
+              hover = true;
             };
           };
         };
