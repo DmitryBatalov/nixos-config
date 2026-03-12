@@ -215,6 +215,8 @@
     udev.extraRules = ''
       # RUTOKEN MFA FIDO2 - grant access to logged-in users
       KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0a89", ATTRS{idProduct}=="0093", TAG+="uaccess"
+      # Ergohaven HPD v2 - Vial keyboard configurator access
+      KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="e126", ATTRS{idProduct}=="0051", TAG+="uaccess", MODE="0660", GROUP="users"
     '';
 
     # the automatic mount USB disks
