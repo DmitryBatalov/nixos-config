@@ -49,6 +49,7 @@ in
     pkgs.bambu-studio
     pkgs.obsidian
     pkgs.vlc
+    pkgs.xournalpp
     nixvim-config.packages.${pkgs.stdenv.hostPlatform.system}.default
     claude-config.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
