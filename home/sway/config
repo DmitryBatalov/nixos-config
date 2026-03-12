@@ -309,7 +309,7 @@ bindswitch --reload --locked lid:off output eDP-1 enable
 
 input type:keyboard {
     xkb_layout us,ru
-    xkb_options grp:win_space_toggle
+    xkb_options grp:caps_toggle
     repeat_delay 200
     repeat_rate 35
 }
