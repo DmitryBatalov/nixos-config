@@ -42,7 +42,7 @@ in
   home.packages = [
     pkgs.flameshot
     pkgs.satty
-    pkgs.telegram-desktop
+    unstable.telegram-desktop
     pkgs.libreoffice-qt6-fresh
     (import ../../home/programs/rider-fhs.nix { inherit pkgs unstable; })
     pkgs.freecad
