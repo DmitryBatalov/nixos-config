@@ -115,7 +115,7 @@
     grim # screenshot tool for Wayland (sway)
     slurp # region selector for Wayland (sway)
     neofetch
-    xfce.thunar # xfce4's file manager
+    nautilus
     pavucontrol
     calc
     pam_u2f # FIDO2 PAM module + pamu2fcfg registration tool

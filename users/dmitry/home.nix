@@ -180,6 +180,14 @@ in
     };
   };
 
+  gtk = {
+    enable = true;
+    iconTheme = {
+      name = "Papirus-Dark";
+      package = pkgs.papirus-icon-theme;
+    };
+  };
+
   # enable auto mount of USB disks
   services.udiskie.enable = true;
 }
