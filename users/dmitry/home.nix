@@ -71,6 +71,7 @@ in
       sessionVariables = {
         EDITOR = "nvim";
         TERMINAL = "alacritty";
+        BROWSER = "chromium";
       };
       shellAliases = {
         lg = "lazygit";
@@ -163,6 +164,14 @@ in
   xdg = {
     enable = true;
     autostart.enable = true;
+    mimeApps = {
+      enable = true;
+      defaultApplications = {
+        "x-scheme-handler/http" = "chromium-proxy.desktop";
+        "x-scheme-handler/https" = "chromium-proxy.desktop";
+        "text/html" = "chromium-proxy.desktop";
+      };
+    };
     desktopEntries.chromium-proxy = {
       name = "Chromium (Proxy)";
       exec = "chromium --proxy-server=\"socks5://127.0.0.1:1081\" %U";
