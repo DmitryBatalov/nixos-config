@@ -189,6 +189,11 @@ in
     };
   };
 
+  xdg.configFile."satty/config.toml".text = ''
+    [general]
+    early-exit = true
+  '';
+
   # enable auto mount of USB disks
   services.udiskie.enable = true;
 }
