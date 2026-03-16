@@ -58,6 +58,7 @@ in
   programs = {
     git = {
       enable = true;
+      ignores = [ ".claude/" ];
       settings = {
         user = {
           name = "dmitry.batalov";
