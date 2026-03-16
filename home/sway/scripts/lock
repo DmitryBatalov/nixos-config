@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-swaylock \
+swaylock -f \
     --image ~/.config/sway/wallpaper.png \
     --scaling fill \
     --indicator-radius 100 \
