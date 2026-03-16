@@ -235,6 +235,14 @@
       };
     }
     {
+      mode = "v";
+      key = "<leader>gh";
+      action = "<cmd>'<,'>DiffviewFileHistory<CR>";
+      options = {
+        desc = "[G]it [H]istory (selected lines)";
+      };
+    }
+    {
       mode = "n";
       key = "<leader>gq";
       action = "<cmd>DiffviewClose<CR>";
