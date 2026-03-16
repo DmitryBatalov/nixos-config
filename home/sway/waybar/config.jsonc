@@ -13,6 +13,7 @@
         "custom/ssh-tunnel",
         "pulseaudio",
         "sway/language",
+        "battery",
         "custom/ppd-menu",
         "clock",
         "custom/powermenu",
@@ -38,25 +39,25 @@
     },
 
     "disk": {
-        "format": "  {free}",
+        "format": "󰋊 {free}",
         "path": "/",
         "interval": 30
     },
 
     "memory": {
-        "format": " {percentage}%",
+        "format": "󰍛 {percentage}%",
         "interval": 2,
         "tooltip-format": "{used:0.1f}G / {total:0.1f}G"
     },
 
     "cpu": {
-        "format": " {usage:02}%",
+        "format": "󰻠 {usage:02}%",
         "interval": 2
     },
 
     "temperature": {
         "format": "{icon} {temperatureC}°C",
-        "format-icons": ["", "", "", "", ""],
+        "format-icons": ["󱃃", "󰔏", "󱃂"],
         "critical-threshold": 90,
         "warning-threshold": 70,
         "interval": 30
@@ -71,9 +72,9 @@
 
     "pulseaudio": {
         "format": "{icon} {volume}%",
-        "format-muted": " MUTE",
+        "format-muted": "󰝟 MUTE",
         "format-icons": {
-            "default": ["", "", ""]
+            "default": ["󰕿", "󰖀", "󰕾"]
         },
         "on-click": "pavucontrol",
         "scroll-step": 5
@@ -85,11 +86,24 @@
     },
 
     "custom/ppd-menu": {
-        "exec": "case $(powerprofilesctl get) in performance) echo '{\"text\":\"\",\"class\":\"performance\"}' ;; power-saver) echo '{\"text\":\"\",\"class\":\"power-saver\"}' ;; *) echo '{\"text\":\"\",\"class\":\"balanced\"}' ;; esac",
+        "exec": "case $(powerprofilesctl get) in performance) echo '{\"text\":\"󰓅\",\"class\":\"performance\"}' ;; power-saver) echo '{\"text\":\"󰾆\",\"class\":\"power-saver\"}' ;; *) echo '{\"text\":\"󰾅\",\"class\":\"balanced\"}' ;; esac",
         "return-type": "json",
         "interval": 5,
         "on-click": "$HOME/.config/sway/scripts/power-profiles",
         "tooltip": false
+    },
+
+    "battery": {
+        "bat": "BAT1",
+        "format": "{icon} {capacity}%",
+        "format-charging": "󰂄 {capacity}%",
+        "format-icons": ["󰂎", "󰁺", "󰁼", "󰁾", "󰂀", "󰂂", "󰁹"],
+        "states": {
+            "warning": 20,
+            "critical": 10
+        },
+        "interval": 30,
+        "tooltip-format": "{timeTo}"
     },
 
     "clock": {
@@ -99,7 +113,7 @@
     },
 
     "custom/powermenu": {
-        "format": " ",
+        "format": "⏻",
         "on-click": "$HOME/.config/sway/scripts/powermenu",
         "tooltip": false
     },
