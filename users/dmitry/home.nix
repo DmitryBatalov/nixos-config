@@ -51,6 +51,8 @@ in
     pkgs.vlc
     pkgs.evince
     pkgs.xournalpp
+    pkgs.mongosh
+    pkgs.mariadb.client
     nixvim-config.packages.${pkgs.stdenv.hostPlatform.system}.default
     claude-config.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
@@ -158,6 +160,7 @@ in
       ];
       extraConfig = ''
         set -ag terminal-overrides ",*:RGB"
+        set -g allow-passthrough on
       '';
     };
 
@@ -204,8 +207,10 @@ in
   xdg.configFile."satty/config.toml".text = ''
     [general]
     early-exit = true
+    copy-command = "wl-copy"
   '';
 
   # enable auto mount of USB disks
   services.udiskie.enable = true;
+  services.ssh-agent.enable = true;
 }
