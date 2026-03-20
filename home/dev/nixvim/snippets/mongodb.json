@@ -1,0 +1,118 @@
+{
+  "find": {
+    "prefix": "dbfind",
+    "body": "db.${1:collection}.find({${2}})${0}",
+    "description": "MongoDB find query"
+  },
+  "findOne": {
+    "prefix": "dbfindone",
+    "body": "db.${1:collection}.findOne({${2}})${0}",
+    "description": "MongoDB findOne query"
+  },
+  "find with projection": {
+    "prefix": "dbfindp",
+    "body": "db.${1:collection}.find({${2}}, {${3}})${0}",
+    "description": "MongoDB find with projection"
+  },
+  "find with sort and limit": {
+    "prefix": "dbfindsl",
+    "body": "db.${1:collection}.find({${2}}).sort({${3}: ${4:-1}}).limit(${5:10})${0}",
+    "description": "MongoDB find with sort and limit"
+  },
+  "aggregate": {
+    "prefix": "dbaggregate",
+    "body": [
+      "db.${1:collection}.aggregate([",
+      "  { \\$${2:match}: {${3}} },",
+      "  { \\$${4:group}: {${5}} }",
+      "])"
+    ],
+    "description": "MongoDB aggregate pipeline"
+  },
+  "insertOne": {
+    "prefix": "dbinsertone",
+    "body": "db.${1:collection}.insertOne({${2}})${0}",
+    "description": "MongoDB insertOne"
+  },
+  "insertMany": {
+    "prefix": "dbinsertmany",
+    "body": [
+      "db.${1:collection}.insertMany([",
+      "  {${2}},",
+      "])"
+    ],
+    "description": "MongoDB insertMany"
+  },
+  "updateOne": {
+    "prefix": "dbupdateone",
+    "body": "db.${1:collection}.updateOne({${2}}, { \\$set: {${3}} })${0}",
+    "description": "MongoDB updateOne"
+  },
+  "updateMany": {
+    "prefix": "dbupdatemany",
+    "body": "db.${1:collection}.updateMany({${2}}, { \\$set: {${3}} })${0}",
+    "description": "MongoDB updateMany"
+  },
+  "deleteOne": {
+    "prefix": "dbdeleteone",
+    "body": "db.${1:collection}.deleteOne({${2}})${0}",
+    "description": "MongoDB deleteOne"
+  },
+  "deleteMany": {
+    "prefix": "dbdeletemany",
+    "body": "db.${1:collection}.deleteMany({${2}})${0}",
+    "description": "MongoDB deleteMany"
+  },
+  "countDocuments": {
+    "prefix": "dbcount",
+    "body": "db.${1:collection}.countDocuments({${2}})${0}",
+    "description": "MongoDB countDocuments"
+  },
+  "createIndex": {
+    "prefix": "dbindex",
+    "body": "db.${1:collection}.createIndex({${2}: ${3:1}})${0}",
+    "description": "MongoDB createIndex"
+  },
+  "distinct": {
+    "prefix": "dbdistinct",
+    "body": "db.${1:collection}.distinct(\"${2:field}\", {${3}})${0}",
+    "description": "MongoDB distinct"
+  },
+  "getSiblingDB": {
+    "prefix": "dbsibling",
+    "body": "db.getSiblingDB(\"${1:database}\")${0}",
+    "description": "MongoDB switch database"
+  },
+  "match stage": {
+    "prefix": "dbmatch",
+    "body": "{ \\$match: {${1}} }",
+    "description": "MongoDB $match stage"
+  },
+  "group stage": {
+    "prefix": "dbgroup",
+    "body": "{ \\$group: { _id: \"$${1:field}\", ${2:count}: { \\$${3:sum}: ${4:1} } } }",
+    "description": "MongoDB $group stage"
+  },
+  "lookup stage": {
+    "prefix": "dblookup",
+    "body": [
+      "{ \\$lookup: {",
+      "  from: \"${1:collection}\",",
+      "  localField: \"${2:localField}\",",
+      "  foreignField: \"${3:foreignField}\",",
+      "  as: \"${4:alias}\"",
+      "} }"
+    ],
+    "description": "MongoDB $lookup (join) stage"
+  },
+  "project stage": {
+    "prefix": "dbproject",
+    "body": "{ \\$project: {${1}} }",
+    "description": "MongoDB $project stage"
+  },
+  "unwind stage": {
+    "prefix": "dbunwind",
+    "body": "{ \\$unwind: \"$${1:field}\" }",
+    "description": "MongoDB $unwind stage"
+  }
+}

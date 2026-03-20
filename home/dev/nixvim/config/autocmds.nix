@@ -23,6 +23,16 @@
         end
       '';
     }
+    # Expand all folds in DBUI result buffers
+    {
+      event = [ "FileType" ];
+      pattern = [ "dbout" ];
+      callback.__raw = ''
+        function()
+          vim.opt_local.foldenable = false
+        end
+      '';
+    }
     # F# filetype detection (Vim defaults .fs to Forth)
     {
       event = [

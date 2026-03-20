@@ -1,0 +1,15 @@
+{
+  "name": "custom-snippets",
+  "contributes": {
+    "snippets": [
+      {
+        "language": "mongodb",
+        "path": "./mongodb.json"
+      },
+      {
+        "language": "javascript",
+        "path": "./mongodb.json"
+      }
+    ]
+  }
+}

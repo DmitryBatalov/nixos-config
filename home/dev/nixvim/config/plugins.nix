@@ -57,6 +57,8 @@
         (padding 1)
         (button "k" "  Keymaps" "Telescope keymaps")
         (padding 1)
+        (button "d" "  Database UI" "DBUIToggle")
+        (padding 1)
         (button "q" "  Quit" "qa")
       ];
     };
@@ -66,6 +68,10 @@
 
     # Automatically detects and sets indentation settings
     guess-indent.enable = true;
+
+    # Database client UI (:DBUI)
+    vim-dadbod-ui.enable = true;
+    vim-dadbod-completion.enable = true;
 
     # Git UI inside Neovim (<leader>lg)
     lazygit.enable = true;
@@ -105,6 +111,10 @@
         formatters_by_ft = {
           nix = [ "alejandra" ];
           lua = [ "stylua" ];
+          javascript = [ "prettier" ];
+          typescript = [ "prettier" ];
+          javascriptreact = [ "prettier" ];
+          typescriptreact = [ "prettier" ];
         };
       };
     };
@@ -122,6 +132,9 @@
         markdown
         yaml
         json
+        javascript
+        typescript
+        tsx
       ];
     };
 
@@ -425,6 +438,9 @@
             };
           };
         };
+
+        # TypeScript/JavaScript lsp
+        ts_ls.enable = true;
 
         # YAML lsp (with OpenAPI/Swagger schema support)
         yamlls = {

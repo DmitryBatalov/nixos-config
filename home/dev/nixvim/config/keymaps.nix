@@ -217,6 +217,31 @@
         desc = "[L]azy[G]it";
       };
     }
+    # Database UI
+    {
+      mode = "n";
+      key = "<leader>db";
+      action = "<cmd>DBUIToggle<CR>";
+      options = {
+        desc = "[D]ata[B]ase UI";
+      };
+    }
+    {
+      mode = "n";
+      key = "<leader>e";
+      action = "vip<Plug>(DBUI_ExecuteQuery)";
+      options = {
+        desc = "[E]xecute query (block)";
+      };
+    }
+    {
+      mode = "v";
+      key = "<leader>e";
+      action = "<Plug>(DBUI_ExecuteQuery)";
+      options = {
+        desc = "[E]xecute query (selection)";
+      };
+    }
     # Diffview
     {
       mode = "n";
