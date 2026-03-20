@@ -11,6 +11,7 @@
       rofi
       dunst
       wl-clipboard
+      wl-clip-persist
       grim
       slurp
       brightnessctl
