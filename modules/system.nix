@@ -74,14 +74,7 @@
   programs = {
     dconf.enable = true;
     amnezia-vpn.enable = true;
-    gnupg.agent = {
-      enable = true;
-      enableSSHSupport = true;
-      settings = {
-        default-cache-ttl-ssh = 86400;
-        max-cache-ttl-ssh = 86400;
-      };
-    };
+    gnupg.agent.enable = true;
   };
 
   # networking.firewall.allowedTCPPorts = [ ... ];
@@ -120,6 +113,7 @@
     calc
     pam_u2f # FIDO2 PAM module + pamu2fcfg registration tool
     libfido2 # FIDO2 library and fido2-token utility
+    sox # audio recording (used by Claude Code /voice)
   ];
 
   # Enable sound with pipewire.
