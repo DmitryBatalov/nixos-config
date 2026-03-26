@@ -4,6 +4,14 @@
   username,
   ...
 }: {
+  # ============================= Certificates =============================
+
+  security.pki.certificateFiles = [
+    ../certs/russian_trusted_root_ca_pem.crt
+    ../certs/russian_trusted_sub_ca_pem.crt
+    ../certs/russian_trusted_sub_ca_2024_pem.crt
+  ];
+
   # ============================= User related =============================
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
