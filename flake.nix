@@ -8,6 +8,10 @@
       url = "github:nix-community/home-manager/release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nixvim-config.url = "path:./home/dev/nixvim";
     claude-config.url = "path:./home/dev/claude";
   };
@@ -16,6 +20,7 @@
     self,
     nixpkgs,
     home-manager,
+    disko,
     ...
   }: {
     nixosConfigurations = {
@@ -41,6 +46,19 @@
                 backupFileExtension = "backup";
               };
             }
+          ];
+        };
+
+      vega = let
+        username = "dmitry";
+        specialArgs = {inherit username;};
+      in
+        nixpkgs.lib.nixosSystem {
+          inherit specialArgs;
+
+          system = "x86_64-linux";
+          modules = [
+            ./hosts/vega
           ];
         };
     };
