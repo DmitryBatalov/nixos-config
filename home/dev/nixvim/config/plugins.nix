@@ -1,68 +1,11 @@
 { pkgs, ... }:
 {
-  plugins = {
-    # Start screen dashboard
-    alpha = {
-      enable = true;
-      settings.layout = let
-        padding = val: {
-          type = "padding";
-          val = val;
-        };
-        button = shortcut: text: action: {
-          type = "button";
-          val = text;
-          on_press.__raw = "function() vim.cmd('${action}') end";
-          opts = {
-            shortcut = shortcut;
-            position = "center";
-            cursor = 3;
-            width = 50;
-            align_shortcut = "right";
-            keymap = [
-              "n"
-              shortcut
-              "<cmd>${action}<CR>"
-              {
-                noremap = true;
-                silent = true;
-                nowait = true;
-              }
-            ];
-          };
-        };
-      in [
-        (padding 4)
-        {
-          type = "text";
-          val = [
-            "  ███╗   ██╗██╗██╗  ██╗██╗   ██╗██╗███╗   ███╗  "
-            "  ████╗  ██║██║╚██╗██╔╝██║   ██║██║████╗ ████║  "
-            "  ██╔██╗ ██║██║ ╚███╔╝ ██║   ██║██║██╔████╔██║  "
-            "  ██║╚██╗██║██║ ██╔██╗ ╚██╗ ██╔╝██║██║╚██╔╝██║  "
-            "  ██║ ╚████║██║██╔╝ ██╗ ╚████╔╝ ██║██║ ╚═╝ ██║  "
-            "  ╚═╝  ╚═══╝╚═╝╚═╝  ╚═╝  ╚═══╝ ╚═╝╚═╝     ╚═╝  "
-          ];
-          opts = {
-            position = "center";
-            hl = "Type";
-          };
-        }
-        (padding 2)
-        (button "f" "  Find file" "Telescope find_files")
-        (padding 1)
-        (button "r" "  Recent files" "Telescope oldfiles")
-        (padding 1)
-        (button "g" "  Grep text" "Telescope live_grep")
-        (padding 1)
-        (button "k" "  Keymaps" "Telescope keymaps")
-        (padding 1)
-        (button "d" "  Database UI" "DBUIToggle")
-        (padding 1)
-        (button "q" "  Quit" "qa")
-      ];
-    };
+  extraPackages = with pkgs; [
+    tlaplus-toolbox
+    alloy
+  ];
 
+  plugins = {
     # File type icons for various plugins
     web-devicons.enable = true;
 
@@ -83,7 +26,13 @@
     gitsigns.enable = true;
 
     # Displays LSP progress notifications in the bottom right corner
-    fidget.enable = true;
+    fidget = {
+      enable = true;
+      settings = {
+        progress.display.render_limit = 3;
+        notification.window.max_height = 3;
+      };
+    };
 
     # Live markdown preview in browser (:MarkdownPreview)
     markdown-preview = {
@@ -407,9 +356,9 @@
             action = "goto_next";
             desc = "Next [D]iagnostic";
           };
-          "<leader>e" = {
+          "<leader>ld" = {
             action = "open_float";
-            desc = "Show Diagnostic Float";
+            desc = "[L]SP [D]iagnostic Float";
           };
           "<leader>q" = {
             action = "setloclist";
