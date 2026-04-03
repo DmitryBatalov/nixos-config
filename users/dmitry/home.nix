@@ -12,6 +12,7 @@ let
     inherit (pkgs.stdenv.hostPlatform) system;
     config.allowUnfree = true; # Explicit config for unstable
   };
+  riderPkgs = import ../../home/programs/rider-fhs.nix { inherit pkgs unstable; };
 in
 {
   imports = [
@@ -44,7 +45,7 @@ in
     pkgs.satty
     unstable.telegram-desktop
     pkgs.libreoffice-qt6-fresh
-    (import ../../home/programs/rider-fhs.nix { inherit pkgs unstable; })
+    riderPkgs.fhs
     pkgs.freecad
     pkgs.bambu-studio
     pkgs.obsidian
@@ -189,7 +190,7 @@ in
     desktopEntries.rider = {
       name = "Rider";
       exec = "rider";
-      icon = "${unstable.jetbrains.rider}/share/pixmaps/rider.svg";
+      icon = "${riderPkgs.rider}/share/pixmaps/rider.svg";
       comment = "JetBrains Rider IDE";
       categories = [ "Development" "IDE" ];
       terminal = false;

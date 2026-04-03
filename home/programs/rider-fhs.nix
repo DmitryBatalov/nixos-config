@@ -39,21 +39,24 @@ let
     combinePackages [ dotnet_10.sdk dotnet_8.sdk pkgsWithInsecure.dotnet-sdk_6 ];
 
 in
-pkgs.buildFHSEnv {
-  name = "rider";
+{
+  rider = rider;
+  fhs = pkgs.buildFHSEnv {
+    name = "rider";
 
-  targetPkgs = _: [
-    rider
-    dotnet
-    pkgs.proxychains-ng
-  ];
+    targetPkgs = _: [
+      rider
+      dotnet
+      pkgs.proxychains-ng
+    ];
 
-  profile = ''
-    export DOTNET_ROOT=${dotnet}/share/dotnet
-    export DOTNET_PATH=${dotnet}/bin/dotnet
-    export PATH=$PATH:${dotnet}/share/dotnet
-    export PROXYCHAINS_CONF_FILE=${proxychainsConf}
-  '';
+    profile = ''
+      export DOTNET_ROOT=${dotnet}/share/dotnet
+      export DOTNET_PATH=${dotnet}/bin/dotnet
+      export PATH=$PATH:${dotnet}/share/dotnet
+      export PROXYCHAINS_CONF_FILE=${proxychainsConf}
+    '';
 
-  runScript = "proxychains4 -q rider";
+    runScript = "proxychains4 -q rider";
+  };
 }
