@@ -10,6 +10,22 @@ let
     socks5 127.0.0.1 1081
   '';
 
+  # Override Rider source to fetch via SOCKS5 proxy
+  riderBase = unstable.jetbrains.rider;
+  rider = riderBase.overrideAttrs (old: {
+    src = pkgs.stdenvNoCC.mkDerivation {
+      name = old.src.name;
+      outputHash = old.src.outputHash;
+      outputHashAlgo = "sha256";
+      outputHashMode = "flat";
+      nativeBuildInputs = [ pkgs.curl ];
+      phases = [ "installPhase" ];
+      installPhase = ''
+        curl -L --socks5-hostname 127.0.0.1:1081 -o $out ${old.src.url}
+      '';
+    };
+  });
+
   pkgsWithInsecure = import pkgs.path {
     inherit (pkgs.stdenv.hostPlatform) system;
     config = {
@@ -27,7 +43,7 @@ pkgs.buildFHSEnv {
   name = "rider";
 
   targetPkgs = _: [
-    unstable.jetbrains.rider
+    rider
     dotnet
     pkgs.proxychains-ng
   ];
