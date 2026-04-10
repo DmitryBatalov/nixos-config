@@ -52,6 +52,7 @@ in
     pkgs.vlc
     pkgs.evince
     pkgs.xournalpp
+    pkgs.typst
     pkgs.mongosh
     pkgs.mariadb.client
     nixvim-config.packages.${pkgs.stdenv.hostPlatform.system}.default
