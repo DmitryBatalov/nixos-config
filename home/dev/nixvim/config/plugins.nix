@@ -25,6 +25,26 @@
     # Git change indicators in the sign column + inline hunk operations
     gitsigns.enable = true;
 
+    # REPL manager — send code to dotnet fsi, python, etc.
+    iron = {
+      enable = true;
+      settings = {
+        config = {
+          repl_definition = {
+            fsharp = {
+              command.__raw = ''{ "dotnet", "fsi" }'';
+              close.__raw = ''{ ";;" }'';
+            };
+          };
+          repl_open_cmd.__raw = ''require("iron.view").split.vertical.botright(0.4)'';
+        };
+        keymaps = {
+          visual_send = "<leader>rc";
+          exit = "<leader>rq";
+        };
+      };
+    };
+
     # Displays LSP progress notifications in the bottom right corner
     fidget = {
       enable = true;
@@ -155,6 +175,10 @@
           {
             __unkeyed-1 = "<leader>l";
             group = "[L]SP";
+          }
+          {
+            __unkeyed-1 = "<leader>r";
+            group = "[R]EPL";
           }
           {
             __unkeyed-1 = "<leader>g";

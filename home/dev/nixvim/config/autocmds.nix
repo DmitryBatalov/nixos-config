@@ -1,4 +1,17 @@
 {
+  userCommands = {
+    B64encode = {
+      range = true;
+      command = "'<,'>!base64 -w0";
+      desc = "Base64 encode selection";
+    };
+    B64decode = {
+      range = true;
+      command = "'<,'>!base64 -d";
+      desc = "Base64 decode selection";
+    };
+  };
+
   # https://nix-community.github.io/nixvim/NeovimOptions/autoGroups/index.html
   autoGroups = {
     kickstart-highlight-yank = {

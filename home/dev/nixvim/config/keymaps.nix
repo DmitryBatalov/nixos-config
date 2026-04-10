@@ -1,5 +1,13 @@
 {
   keymaps = [
+    # Exit terminal insert mode with Esc
+    {
+      mode = "t";
+      key = "<Esc>";
+      action = "<C-\\><C-n>";
+      options.desc = "Exit terminal mode";
+    }
+
     # Clear highlights on search when pressing <Esc> in normal mode
     #  See `:help hlsearch`
     {
@@ -208,6 +216,25 @@
       action.__raw = "function() require('gitsigns').blame_line({ full = true }) end";
       options.desc = "Git [H]unk [B]lame";
     }
+    # REPL (iron.nvim)
+    {
+      mode = "n";
+      key = "<leader>rs";
+      action.__raw = "function() require('iron.core').repl_for(vim.bo.filetype) end";
+      options.desc = "[R]EPL [S]tart";
+    }
+    {
+      mode = "n";
+      key = "<leader>rr";
+      action.__raw = "function() require('iron.core').repl_restart(vim.bo.filetype) end";
+      options.desc = "[R]EPL [R]estart";
+    }
+    {
+      mode = "n";
+      key = "<leader>rh";
+      action.__raw = "function() require('iron.core').hide_repl(vim.bo.filetype) end";
+      options.desc = "[R]EPL [H]ide";
+    }
     # Open LazyGit
     {
       mode = "n";
@@ -360,6 +387,19 @@
       options = {
         desc = "[L]SP Show [P]rojects";
       };
+    }
+    # Base64 encode/decode
+    {
+      mode = "v";
+      key = "<leader>be";
+      action = ":B64encode<CR>";
+      options.desc = "[B]ase64 [E]ncode";
+    }
+    {
+      mode = "v";
+      key = "<leader>bd";
+      action = ":B64decode<CR>";
+      options.desc = "[B]ase64 [D]ecode";
     }
   ];
 }
