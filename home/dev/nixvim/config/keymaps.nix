@@ -225,6 +225,12 @@
     }
     {
       mode = "n";
+      key = "<leader>rl";
+      action.__raw = "function() require('iron.core').send_line() end";
+      options.desc = "[R]EPL Send [L]ine";
+    }
+    {
+      mode = "n";
       key = "<leader>rr";
       action.__raw = "function() require('iron.core').repl_restart(vim.bo.filetype) end";
       options.desc = "[R]EPL [R]estart";

@@ -33,7 +33,14 @@
           repl_definition = {
             fsharp = {
               command.__raw = ''{ "dotnet", "fsi" }'';
-              close.__raw = ''{ ";;" }'';
+              format.__raw = ''
+                function(lines)
+                  local result = vim.deepcopy(lines)
+                  table.insert(result, ";;")
+                  result[#result] = result[#result] .. "\r"
+                  return result
+                end
+              '';
             };
           };
           repl_open_cmd.__raw = ''require("iron.view").split.vertical.botright(0.4)'';
