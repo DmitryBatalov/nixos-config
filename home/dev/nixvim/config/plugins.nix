@@ -87,6 +87,7 @@
         formatters_by_ft = {
           nix = [ "alejandra" ];
           lua = [ "stylua" ];
+          markdown = [ "prettier" ];
           javascript = [ "prettier" ];
           typescript = [ "prettier" ];
           javascriptreact = [ "prettier" ];
@@ -364,10 +365,6 @@
           "<C-s>" = {
             action = "signature_help";
             desc = "Signature Help";
-          };
-          "<leader>lf" = {
-            action = "format";
-            desc = "[L]SP [F]ormat";
           };
           "<leader>li" = {
             action = "incoming_calls";

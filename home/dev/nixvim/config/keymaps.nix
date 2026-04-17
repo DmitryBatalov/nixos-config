@@ -216,6 +216,13 @@
       action.__raw = "function() require('gitsigns').blame_line({ full = true }) end";
       options.desc = "Git [H]unk [B]lame";
     }
+    # Format
+    {
+      mode = "n";
+      key = "<leader>lf";
+      action.__raw = "function() require('conform').format({ timeout_ms = 500, lsp_fallback = true }) end";
+      options.desc = "[L]SP [F]ormat";
+    }
     # REPL (iron.nvim)
     {
       mode = "n";
