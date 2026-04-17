@@ -109,7 +109,10 @@ in
     # terminal
     alacritty = {
       enable = true;
-      settings.font.normal.family = "JetBrainsMono Nerd Font";
+      settings.font = {
+        normal.family = "JetBrainsMono Nerd Font";
+        size = 13;
+      };
     };
 
     # TUI for git
