@@ -157,11 +157,9 @@ in
       customPaneNavigationAndResize = true;
       plugins = with pkgs.tmuxPlugins; [
         {
-          plugin = tokyo-night-tmux;
+          plugin = gruvbox;
           extraConfig = ''
-            set -g @tokyo-night-tmux_theme moon
-            set -g @tokyo-night-tmux_window_id_style fsquare
-            set -g @tokyo-night-tmux_pane_id_style hide
+            set -g @tmux-gruvbox 'dark'
           '';
         }
       ];

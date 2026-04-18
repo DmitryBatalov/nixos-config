@@ -125,7 +125,7 @@
       enable = true;
       settings = {
         options = {
-          theme = "tokyonight";
+          theme = "gruvbox";
           component_separators = {
             left = "|";
             right = "|";

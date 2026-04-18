@@ -49,5 +49,5 @@
     undofile = true;
   };
 
-  colorschemes.tokyonight.enable = true;
+  colorschemes.gruvbox.enable = true;
 }
