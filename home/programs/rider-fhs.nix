@@ -18,7 +18,7 @@ let
       outputHash = old.src.outputHash;
       outputHashAlgo = "sha256";
       outputHashMode = "flat";
-      nativeBuildInputs = [ pkgs.curl ];
+      nativeBuildInputs = [ pkgs.curl pkgs.cacert ];
       phases = [ "installPhase" ];
       installPhase = ''
         curl -L --socks5-hostname 127.0.0.1:1081 -o $out ${old.src.url}
