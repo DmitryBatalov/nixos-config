@@ -53,41 +53,18 @@
       };
     }
 
-    # Slightly advanced example of overriding default behavior and theme
+    # fff.nvim file search and grep
     {
       mode = "n";
-      key = "<leader>/";
-      # You can pass additional configuration to Telescope to change the theme, layout, etc.
-      action.__raw = ''
-        function()
-          require('telescope.builtin').current_buffer_fuzzy_find(
-            require('telescope.themes').get_dropdown {
-              winblend = 10,
-              previewer = false
-            }
-          )
-        end
-      '';
-      options = {
-        desc = "[/] Fuzzily search in current buffer";
-      };
+      key = "<leader>sf";
+      action.__raw = "function() require('fff').find_files() end";
+      options.desc = "[S]earch [F]iles";
     }
     {
       mode = "n";
-      key = "<leader>s/";
-      # It's also possible to pass additional configuration options.
-      #  See `:help telescope.builtin.live_grep()` for information about particular keys
-      action.__raw = ''
-        function()
-          require('telescope.builtin').live_grep {
-            grep_open_files = true,
-            prompt_title = 'Live Grep in Open Files'
-          }
-        end
-      '';
-      options = {
-        desc = "[S]earch [/] in Open Files";
-      };
+      key = "<leader>sg";
+      action.__raw = "function() require('fff').live_grep() end";
+      options.desc = "[S]earch by [G]rep";
     }
     # Shortcut for searching your Neovim configuration files
     {
@@ -220,7 +197,7 @@
     {
       mode = "n";
       key = "<leader>lf";
-      action.__raw = "function() require('conform').format({ timeout_ms = 500, lsp_fallback = true }) end";
+      action.__raw = "function() require('conform').format({ timeout_ms = 500, lsp_format = 'fallback' }) end";
       options.desc = "[L]SP [F]ormat";
     }
     # REPL (iron.nvim)

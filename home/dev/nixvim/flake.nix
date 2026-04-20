@@ -5,6 +5,7 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     nixvim.url = "github:nix-community/nixvim";
     flake-parts.url = "github:hercules-ci/flake-parts";
+    fff-nvim.url = "github:dmtrKovalenko/fff.nvim";
   };
 
   outputs = {
@@ -23,12 +24,12 @@
       perSystem = {system, ...}: let
         nixvimLib = nixvim.lib.${system};
         nixvim' = nixvim.legacyPackages.${system};
+        fff-nvim-plugin = inputs.fff-nvim.packages.${system}.fff-nvim;
         nixvimModule = {
           inherit system; # or alternatively, set `pkgs`
           module = import ./config; # import the module directly
-          # You can use `extraSpecialArgs` to pass additional arguments to your module files
           extraSpecialArgs = {
-            # inherit (inputs) foo;
+            inherit fff-nvim-plugin;
           };
         };
         nvim = nixvim'.makeNixvimWithModule nixvimModule;

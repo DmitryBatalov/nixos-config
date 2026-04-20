@@ -1,3 +1,4 @@
+{ fff-nvim-plugin, ... }:
 {
   imports = [
     ./options.nix
@@ -6,4 +7,6 @@
     ./completion.nix
     ./autocmds.nix
   ];
+
+  extraPlugins = [ fff-nvim-plugin ];
 }

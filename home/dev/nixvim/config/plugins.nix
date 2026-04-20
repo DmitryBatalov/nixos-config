@@ -3,6 +3,9 @@
   extraPackages = with pkgs; [
     tlaplus-toolbox
     alloy
+    prettier
+    alejandra
+    stylua
   ];
 
   plugins = {
@@ -80,7 +83,7 @@
             end
             return {
               timeout_ms = 500,
-              lsp_fallback = true,
+              lsp_format = "fallback",
             }
           end
         '';
@@ -255,20 +258,6 @@
             desc = "[S]earch [K]eymaps";
           };
         };
-        "<leader>sf" = {
-          mode = "n";
-          action = "find_files";
-          options = {
-            desc = "[S]earch [F]iles";
-          };
-        };
-        "<leader>ss" = {
-          mode = "n";
-          action = "builtin";
-          options = {
-            desc = "[S]earch [S]elect Telescope";
-          };
-        };
         "<leader>sw" = {
           mode = "n";
           action = "grep_string";
@@ -276,11 +265,11 @@
             desc = "[S]earch current [W]ord";
           };
         };
-        "<leader>sg" = {
+        "<leader>ss" = {
           mode = "n";
-          action = "live_grep";
+          action = "builtin";
           options = {
-            desc = "[S]earch by [G]rep";
+            desc = "[S]earch [S]elect Telescope";
           };
         };
         "<leader>sd" = {
