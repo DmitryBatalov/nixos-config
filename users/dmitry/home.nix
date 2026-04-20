@@ -120,6 +120,7 @@ in
 
     btop.enable = true;
     ripgrep.enable = true;
+    fzf.enable = true;
 
     firefox.enable = true;
     chromium = {
