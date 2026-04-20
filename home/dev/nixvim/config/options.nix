@@ -47,6 +47,9 @@
 
     # Save undo history
     undofile = true;
+
+    # Russian keyboard layout support for normal mode commands
+    langmap = "ФИСВУАПРШОЛДЬТЩЗЙКЫЕГМЦЧНЯ;ABCDEFGHIJKLMNOPQRSTUVWXYZ,фисвуапршолдьтщзйкыегмцчня;abcdefghijklmnopqrstuvwxyz";
   };
 
   colorschemes.gruvbox.enable = true;
