@@ -343,14 +343,6 @@
             action = "type_definition";
             desc = "Type [D]efinition";
           };
-          "<leader>ds" = {
-            action = "document_symbol";
-            desc = "[D]ocument [S]ymbols";
-          };
-          "<leader>ws" = {
-            action = "workspace_symbol";
-            desc = "[W]orkspace [S]ymbols";
-          };
           "<C-s>" = {
             action = "signature_help";
             desc = "Signature Help";

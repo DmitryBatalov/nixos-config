@@ -66,6 +66,33 @@
       action.__raw = "function() require('fff').live_grep() end";
       options.desc = "[S]earch by [G]rep";
     }
+    # LSP symbols via telescope (floating picker instead of quickfix)
+    {
+      mode = "n";
+      key = "<leader>ds";
+      action.__raw = "function() require('telescope.builtin').lsp_document_symbols() end";
+      options.desc = "[D]ocument [S]ymbols";
+    }
+    {
+      mode = "n";
+      key = "<leader>ws";
+      action.__raw = "function() require('telescope.builtin').lsp_dynamic_workspace_symbols() end";
+      options.desc = "[W]orkspace [S]ymbols";
+    }
+    {
+      mode = "n";
+      key = "<leader>lh";
+      action.__raw = ''
+        function()
+          local bufnr = vim.api.nvim_get_current_buf()
+          vim.lsp.inlay_hint.enable(
+            not vim.lsp.inlay_hint.is_enabled { bufnr = bufnr },
+            { bufnr = bufnr }
+          )
+        end
+      '';
+      options.desc = "[L]SP toggle inlay [H]ints";
+    }
     # Shortcut for searching your Neovim configuration files
     {
       mode = "n";
