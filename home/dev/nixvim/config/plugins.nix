@@ -390,7 +390,14 @@
         };
 
         # F# lsp
-        fsautocomplete.enable = true;
+        fsautocomplete = {
+          enable = true;
+          onAttach.function = ''
+            -- Disable semantic tokens; they trigger a retry storm that hangs
+            -- nvim on F# projects targeting non-.NET-8 frameworks (net6, net10).
+            client.server_capabilities.semanticTokensProvider = nil
+          '';
+        };
 
         # Typst lsp
         tinymist.enable = true;

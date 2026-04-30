@@ -81,80 +81,12 @@
         desc = "[S]earch [N]eovim files";
       };
     }
-    # F# Solution picker - load a specific solution with fsautocomplete
+    # F# Solution picker - reuses :FSharpSelectSolution (state-aware)
     {
       mode = "n";
       key = "<leader>ls";
-      action.__raw = ''
-        function()
-          local pickers = require('telescope.pickers')
-          local finders = require('telescope.finders')
-          local conf = require('telescope.config').values
-          local actions = require('telescope.actions')
-          local action_state = require('telescope.actions.state')
-
-          -- Find .sln files starting from current directory going up
-          local cwd = vim.fn.getcwd()
-          local sln_files = vim.fn.globpath(cwd, '**/*.sln', false, true)
-
-          if #sln_files == 0 then
-            vim.notify('No .sln files found', vim.log.levels.WARN)
-            return
-          end
-
-          pickers.new({}, {
-            prompt_title = 'Select F# Solution',
-            finder = finders.new_table {
-              results = sln_files,
-              entry_maker = function(entry)
-                return {
-                  value = entry,
-                  display = vim.fn.fnamemodify(entry, ':t'),
-                  ordinal = entry,
-                }
-              end,
-            },
-            sorter = conf.generic_sorter({}),
-            attach_mappings = function(prompt_bufnr, map)
-              actions.select_default:replace(function()
-                actions.close(prompt_bufnr)
-                local selection = action_state.get_selected_entry()
-                local sln_path = selection.value
-
-                -- Find fsautocomplete client
-                local clients = vim.lsp.get_clients({ name = 'fsautocomplete' })
-                if #clients == 0 then
-                  vim.notify('fsautocomplete LSP not running', vim.log.levels.ERROR)
-                  return
-                end
-
-                local client = clients[1]
-                local sln_name = vim.fn.fnamemodify(sln_path, ":t")
-                vim.notify("Loading " .. sln_name .. "...", vim.log.levels.INFO)
-
-                -- Use correct WorkspaceLoadParms structure from Ionide-vim
-                client.request("fsharp/workspaceLoad", {
-                  TextDocuments = {
-                    { Uri = "file://" .. sln_path }
-                  }
-                }, function(err, result)
-                  if err then
-                    vim.notify("Failed to load " .. sln_name .. ": " .. vim.inspect(err), vim.log.levels.ERROR)
-                  else
-                    vim.notify("Loaded " .. sln_name, vim.log.levels.INFO)
-                    -- Reload buffer to trigger LSP re-analysis
-                    vim.cmd("e")
-                  end
-                end)
-              end)
-              return true
-            end,
-          }):find()
-        end
-      '';
-      options = {
-        desc = "[L]SP Load [S]olution";
-      };
+      action = "<cmd>FSharpSelectSolution<CR>";
+      options.desc = "[L]SP Select [S]olution";
     }
     # Gitsigns hunk navigation
     {
