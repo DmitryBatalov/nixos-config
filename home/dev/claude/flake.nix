@@ -1,5 +1,5 @@
 {
-  description = "Claude with proxychains";
+  description = "Claude with SOCKS5 proxy via env vars";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
@@ -19,23 +19,14 @@
         );
     in
     {
-      packages = forAllSystems (pkgs:
-        let
-          proxychainsConf = pkgs.writeText "proxychains.conf" ''
-            strict_chain
-            quiet_mode
-            proxy_dns
-            localnet 127.0.0.0/255.0.0.0
-
-            [ProxyList]
-            socks5 127.0.0.1 1081
-          '';
-        in
-        {
-          default = pkgs.writeShellScriptBin "claude" ''
-            export PROXYCHAINS_CONF_FILE=${proxychainsConf}
-            exec ${pkgs.proxychains-ng}/bin/proxychains4 -q ${pkgs.claude-code}/bin/claude "$@"
-          '';
-        });
+      packages = forAllSystems (pkgs: {
+        default = pkgs.writeShellScriptBin "claude" ''
+          export HTTPS_PROXY="''${HTTPS_PROXY:-socks5h://127.0.0.1:1081}"
+          export HTTP_PROXY="''${HTTP_PROXY:-socks5h://127.0.0.1:1081}"
+          export ALL_PROXY="''${ALL_PROXY:-socks5h://127.0.0.1:1081}"
+          export NO_PROXY="''${NO_PROXY:-localhost,127.0.0.0/8}"
+          exec ${pkgs.claude-code}/bin/claude "$@"
+        '';
+      });
     };
 }
