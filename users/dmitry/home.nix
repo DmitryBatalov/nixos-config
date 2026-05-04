@@ -101,8 +101,22 @@ in
     ssh = {
       enable = true;
       enableDefaultConfig = false;
-      matchBlocks."*" = {
-        addKeysToAgent = "yes";
+      matchBlocks = {
+        "*" = {
+          addKeysToAgent = "yes";
+        };
+        # ASUS RT-AC1200 running Padavan; dropbear v2017.75 only speaks
+        # ssh-rsa (SHA-1) for both host and user key auth.
+        "ac1200" = {
+          hostname = "192.168.2.1";
+          user = "admin";
+          identityFile = "~/.ssh/id_rsa";
+          identitiesOnly = true;
+          extraOptions = {
+            PubkeyAcceptedAlgorithms = "+ssh-rsa";
+            HostkeyAlgorithms = "+ssh-rsa,ecdsa-sha2-nistp521";
+          };
+        };
       };
     };
 
