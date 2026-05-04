@@ -85,6 +85,17 @@
     gnupg.agent.enable = true;
   };
 
+  # Route nix-daemon's HTTP fetches through the SSH SOCKS5 tunnel on :1081.
+  # cache.nixos.org goes direct (no SOCKS5 dependency for cached builds);
+  # FOD source URLs (github, ziglang.org, etc.) go through the proxy so
+  # geo-blocked / DPI-filtered fetches succeed transparently.
+  systemd.services.nix-daemon.environment = {
+    https_proxy = "socks5h://127.0.0.1:1081";
+    http_proxy = "socks5h://127.0.0.1:1081";
+    all_proxy = "socks5h://127.0.0.1:1081";
+    no_proxy = "localhost,127.0.0.1,cache.nixos.org,channels.nixos.org";
+  };
+
   # networking.firewall.allowedTCPPorts = [ ... ];
   # networking.firewall.allowedUDPPorts = [ ... ];
   # Or disable the firewall altogether.
