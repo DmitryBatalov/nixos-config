@@ -106,9 +106,11 @@ in
           addKeysToAgent = "yes";
         };
         # ASUS RT-AC1200 running Padavan; dropbear v2017.75 only speaks
-        # ssh-rsa (SHA-1) for both host and user key auth.
+        # ssh-rsa (SHA-1) for both host and user key auth. Reached via
+        # AC1200's WAN-side IP+port from Keenetic LAN (192.168.1.x).
         "ac1200" = {
-          hostname = "192.168.2.1";
+          hostname = "192.168.1.142";
+          port = 10022;
           user = "admin";
           identityFile = "~/.ssh/id_rsa";
           identitiesOnly = true;
