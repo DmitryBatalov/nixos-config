@@ -53,17 +53,23 @@
       };
     }
 
-    # fff.nvim file search and grep
+    # Telescope file search (sorted by mtime descending) and live grep
     {
       mode = "n";
       key = "<leader>sf";
-      action.__raw = "function() require('fff').find_files() end";
+      action.__raw = ''
+        function()
+          require('telescope.builtin').find_files {
+            find_command = { 'rg', '--files', '--hidden', '--sortr=modified' },
+          }
+        end
+      '';
       options.desc = "[S]earch [F]iles";
     }
     {
       mode = "n";
       key = "<leader>sg";
-      action.__raw = "function() require('fff').live_grep() end";
+      action.__raw = "function() require('telescope.builtin').live_grep() end";
       options.desc = "[S]earch by [G]rep";
     }
     # LSP symbols via telescope (floating picker instead of quickfix)
