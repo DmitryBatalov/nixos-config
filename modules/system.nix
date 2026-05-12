@@ -81,7 +81,6 @@
 
   programs = {
     dconf.enable = true;
-    amnezia-vpn.enable = true;
     gnupg.agent.enable = true;
   };
 
