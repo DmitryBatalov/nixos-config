@@ -76,7 +76,7 @@ in
       enable = true;
       sessionVariables = {
         EDITOR = "nvim";
-        TERMINAL = "alacritty";
+        TERMINAL = "kitty";
         BROWSER = "chromium";
       };
       shellAliases = {
@@ -123,10 +123,10 @@ in
     };
 
     # terminal
-    alacritty = {
+    kitty = {
       enable = true;
-      settings.font = {
-        normal.family = "JetBrainsMono Nerd Font";
+      font = {
+        name = "JetBrainsMono Nerd Font";
         size = 13;
       };
     };

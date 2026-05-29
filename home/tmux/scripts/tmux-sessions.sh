@@ -13,4 +13,4 @@ chosen=$(printf '%s\n' "${!PROJECTS[@]}" | sort | rofi -dmenu -i -p "tmux sessio
 
 [ -z "$chosen" ] && exit 0
 
-exec "${TERMINAL:-alacritty}" -e "${PROJECTS[$chosen]}"
+exec "${TERMINAL:-kitty}" -e "${PROJECTS[$chosen]}"

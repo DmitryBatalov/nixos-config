@@ -101,7 +101,7 @@ bindsym $mod+r mode "resize"
 ######################################
 
 # start a terminal
-bindsym $mod+Return exec ${TERMINAL:-alacritty}
+bindsym $mod+Return exec ${TERMINAL:-kitty}
 
 # open tmux project session picker
 bindsym $mod+Shift+t exec ~/.config/tmux/scripts/tmux-sessions.sh

@@ -6,11 +6,19 @@
     prettier
     alejandra
     stylua
+    imagemagick # required by snacks.image for non-PNG conversion
   ];
 
   plugins = {
     # File type icons for various plugins
     web-devicons.enable = true;
+
+    # snacks.nvim — only the image module is enabled.
+    # Inline image preview via Kitty graphics protocol (works in kitty/ghostty/wezterm).
+    snacks = {
+      enable = true;
+      settings.image.enabled = true;
+    };
 
     # Automatically detects and sets indentation settings
     guess-indent.enable = true;
