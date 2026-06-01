@@ -7,6 +7,7 @@
     alejandra
     stylua
     imagemagick # required by snacks.image for non-PNG conversion
+    imv # external image viewer (bound to <leader>iv)
   ];
 
   plugins = {

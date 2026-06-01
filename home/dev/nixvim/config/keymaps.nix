@@ -343,6 +343,17 @@
         desc = "[L]SP Show [P]rojects";
       };
     }
+    # Open current file in imv (image viewer)
+    {
+      mode = "n";
+      key = "<leader>iv";
+      action.__raw = ''
+        function()
+          vim.fn.jobstart({ "imv", vim.fn.expand("%:p") }, { detach = true })
+        end
+      '';
+      options.desc = "[I]mage [V]iew (imv)";
+    }
     # Base64 encode/decode
     {
       mode = "v";
