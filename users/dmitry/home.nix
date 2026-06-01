@@ -43,7 +43,6 @@ in
   ];
 
   home.packages = [
-    pkgs.flameshot
     pkgs.satty
     unstable.telegram-desktop
     pkgs.libreoffice-qt6-fresh
