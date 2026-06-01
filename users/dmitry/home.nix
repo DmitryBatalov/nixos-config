@@ -13,6 +13,24 @@ let
     config.allowUnfree = true; # Explicit config for unstable
   };
   riderPkgs = import ../../home/programs/rider-fhs.nix { inherit pkgs unstable; };
+
+  # KeePassXC native messaging manifest for Chromium.
+  # The nixpkgs keepassxc only ships a Firefox manifest (allowed_extensions);
+  # Chromium requires allowed_origins with the extension's chrome-extension:// URL,
+  # so we ship our own package consumed via programs.chromium.nativeMessagingHosts.
+  keepassxcChromiumHost = pkgs.writeTextFile {
+    name = "keepassxc-chromium-native-messaging-host";
+    destination = "/etc/chromium/native-messaging-hosts/org.keepassxc.keepassxc_browser.json";
+    text = builtins.toJSON {
+      name = "org.keepassxc.keepassxc_browser";
+      description = "KeePassXC integration with native messaging support";
+      path = "${pkgs.keepassxc}/bin/keepassxc-proxy";
+      type = "stdio";
+      allowed_origins = [
+        "chrome-extension://oboonakemofpalcgghocfoadofidjkkk/"
+      ];
+    };
+  };
 in
 {
   imports = [
@@ -23,22 +41,6 @@ in
     ../../home/tmux
     ../../home/kube
   ];
-
-  # KeePassXC native messaging manifest for Chromium
-  # The nixpkgs keepassxc only ships a Firefox manifest (allowed_extensions).
-  # Chromium requires allowed_origins with the extension's chrome-extension:// URL.
-  home.file.".config/chromium/NativeMessagingHosts/org.keepassxc.keepassxc_browser.json" = {
-    text = builtins.toJSON {
-      name = "org.keepassxc.keepassxc_browser";
-      description = "KeePassXC integration with native messaging support";
-      path = "${pkgs.keepassxc}/bin/keepassxc-proxy";
-      type = "stdio";
-      allowed_origins = [
-        "chrome-extension://oboonakemofpalcgghocfoadofidjkkk/"
-      ];
-    };
-    force = true;
-  };
 
   home.packages = [
     pkgs.flameshot
@@ -101,23 +103,21 @@ in
     ssh = {
       enable = true;
       enableDefaultConfig = false;
-      matchBlocks = {
+      settings = {
         "*" = {
-          addKeysToAgent = "yes";
+          AddKeysToAgent = "yes";
         };
         # ASUS RT-AC1200 running Padavan; dropbear v2017.75 only speaks
         # ssh-rsa (SHA-1) for both host and user key auth. Reached via
         # AC1200's WAN-side IP+port from Keenetic LAN (192.168.1.x).
         "ac1200" = {
-          hostname = "192.168.1.142";
-          port = 10022;
-          user = "admin";
-          identityFile = "~/.ssh/id_rsa";
-          identitiesOnly = true;
-          extraOptions = {
-            PubkeyAcceptedAlgorithms = "+ssh-rsa";
-            HostkeyAlgorithms = "+ssh-rsa,ecdsa-sha2-nistp521";
-          };
+          HostName = "192.168.1.142";
+          Port = 10022;
+          User = "admin";
+          IdentityFile = "~/.ssh/id_rsa";
+          IdentitiesOnly = "yes";
+          PubkeyAcceptedAlgorithms = "+ssh-rsa";
+          HostkeyAlgorithms = "+ssh-rsa,ecdsa-sha2-nistp521";
         };
       };
     };
@@ -139,12 +139,17 @@ in
     ripgrep.enable = true;
     fzf.enable = true;
 
-    firefox.enable = true;
+    firefox = {
+      enable = true;
+      # Silence 26.05 warning: keep legacy non-XDG path until we actually use Firefox.
+      configPath = ".mozilla/firefox";
+    };
     chromium = {
       enable = true;
       extensions = [
         { id = "oboonakemofpalcgghocfoadofidjkkk"; } # KeePassXC-Browser
       ];
+      nativeMessagingHosts = [ keepassxcChromiumHost ];
     };
 
     keepassxc = {

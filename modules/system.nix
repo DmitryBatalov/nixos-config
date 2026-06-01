@@ -125,7 +125,7 @@
 
     grim # screenshot tool for Wayland (sway)
     slurp # region selector for Wayland (sway)
-    neofetch
+    fastfetch
     nautilus
     pavucontrol
     calc
