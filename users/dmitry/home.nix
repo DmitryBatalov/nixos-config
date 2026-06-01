@@ -125,6 +125,7 @@ in
     # terminal
     kitty = {
       enable = true;
+      themeFile = "gruvbox-dark";
       font = {
         name = "JetBrainsMono Nerd Font";
         size = 13;
