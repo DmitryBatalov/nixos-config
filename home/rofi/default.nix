@@ -4,7 +4,7 @@
   ...
 }: {
   # https://github.com/endeavouros-team/endeavouros-i3wm-setup
-  home.file.".config/rofi" = {
+  xdg.configFile."rofi" = {
     source = ./configs;
     # copy the scripts directory recursively
     recursive = true;

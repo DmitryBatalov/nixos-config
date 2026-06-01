@@ -3,7 +3,7 @@
   config,
   ...
 }: {
-  home.file.".config/tmux/scripts" = {
+  xdg.configFile."tmux/scripts" = {
     source = ./scripts;
     recursive = true;
     executable = true;
