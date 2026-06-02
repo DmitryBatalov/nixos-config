@@ -58,7 +58,12 @@ in
     pkgs.mariadb.client
     nixvim-config.packages.${pkgs.stdenv.hostPlatform.system}.default
     claude-config.packages.${pkgs.stdenv.hostPlatform.system}.default
+    pkgs.xdg-terminal-exec
   ];
+
+  home.sessionVariables = {
+    TERMINAL = "kitty";
+  };
 
   programs = {
     git = {
@@ -77,7 +82,6 @@ in
       enable = true;
       sessionVariables = {
         EDITOR = "nvim";
-        TERMINAL = "kitty";
         BROWSER = "chromium";
       };
       shellAliases = {
