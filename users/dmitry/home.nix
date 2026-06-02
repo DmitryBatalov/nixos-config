@@ -130,7 +130,7 @@ in
       enable = true;
       themeFile = "gruvbox-dark";
       font = {
-        name = "JetBrainsMono Nerd Font";
+        name = "JetBrainsMono NF Light";
         size = 13;
       };
     };
