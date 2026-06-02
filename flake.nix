@@ -12,8 +12,14 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    nixvim-config.url = "path:./home/dev/nixvim";
-    claude-config.url = "path:./home/dev/claude";
+    nixvim-config = {
+      url = "path:./home/dev/nixvim";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
+    claude-config = {
+      url = "path:./home/dev/claude";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
   };
 
   outputs = inputs @ {
