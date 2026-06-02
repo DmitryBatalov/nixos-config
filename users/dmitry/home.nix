@@ -43,7 +43,7 @@ in
   ];
 
   home.packages = [
-    pkgs.satty
+    pkgs.flameshot
     unstable.telegram-desktop
     pkgs.libreoffice-qt6-fresh
     riderPkgs.fhs
@@ -227,6 +227,11 @@ in
     };
   };
 
+  xdg.configFile."flameshot/flameshot.ini".text = ''
+    [General]
+    useGrimAdapter=true
+  '';
+
   gtk = {
     enable = true;
     iconTheme = {
@@ -234,12 +239,6 @@ in
       package = pkgs.papirus-icon-theme;
     };
   };
-
-  xdg.configFile."satty/config.toml".text = ''
-    [general]
-    early-exit = true
-    copy-command = "wl-copy"
-  '';
 
   # enable auto mount of USB disks
   services.udiskie.enable = true;
