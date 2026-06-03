@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+# waybar's sway/language {short} needs the xkb rules registry to map a layout
+# name to a short code, which isn't resolvable in waybar's environment here, so
+# it shows "...". Derive the code ourselves from sway's reported layout name.
+
+: "${SWAYSOCK:=$(ls /run/user/"$(id -u)"/sway-ipc.*.sock 2>/dev/null | head -1)}"
+export SWAYSOCK
+
+name=$(swaymsg -t get_inputs 2>/dev/null \
+    | jq -r '[.[].xkb_active_layout_name] | map(select(. != null)) | .[0] // empty')
+
+case "$name" in
+    English*) code="en" ;;
+    Russian*) code="ru" ;;
+    "")       code="?" ;;
+    *)        code=$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]' | cut -c1-2) ;;
+esac
+
+echo "{\"text\":\"$code\",\"tooltip\":\"${name:-unknown}\"}"

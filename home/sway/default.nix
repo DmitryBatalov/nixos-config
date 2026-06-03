@@ -66,6 +66,10 @@
       source = ./scripts/network-waybar;
       executable = true;
     };
+    ".config/sway/scripts/keyboard-waybar" = {
+      source = ./scripts/keyboard-waybar;
+      executable = true;
+    };
     ".config/sway/scripts/ssh-tunnel-toggle" = {
       source = ./scripts/ssh-tunnel-toggle;
       executable = true;

@@ -13,7 +13,7 @@
         "custom/network",
         "custom/ssh-tunnel",
         "pulseaudio",
-        "sway/language",
+        "custom/keyboard",
         "battery",
         "custom/ppd-menu",
         "clock",
@@ -87,9 +87,10 @@
         "scroll-step": 5
     },
 
-    "sway/language": {
-        "format": "{}",
-        "tooltip": false
+    "custom/keyboard": {
+        "exec": "$HOME/.config/sway/scripts/keyboard-waybar",
+        "return-type": "json",
+        "interval": 1
     },
 
     "custom/ppd-menu": {
