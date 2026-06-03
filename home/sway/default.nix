@@ -28,7 +28,7 @@
     };
     Service = {
       Environment = "SSH_AUTH_SOCK=%t/ssh-agent";
-      ExecStart = "${pkgs.openssh}/bin/ssh -D 1081 -N -C -p 443 -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes dmitry@45.151.68.245";
+      ExecStart = "${pkgs.openssh}/bin/ssh -D 1081 -N -C -p 443 -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes dmitry@62.60.153.73";
       Restart = "on-failure";
       RestartSec = 5;
     };
