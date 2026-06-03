@@ -230,6 +230,9 @@ in
   xdg.configFile."flameshot/flameshot.ini".text = ''
     [General]
     useGrimAdapter=true
+    showDesktopNotification=false
+    showAbortNotification=false
+    showStartupLaunchMessage=false
   '';
 
   gtk = {
