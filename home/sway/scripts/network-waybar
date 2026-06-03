@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+# Find the interface backing the current default route (the link actually
+# carrying traffic). With the wifi/ethernet dispatcher, only one has a
+# default route at a time.
+dev=$(ip route show default 2>/dev/null \
+    | awk '{for (i = 1; i <= NF; i++) if ($i == "dev") { print $(i + 1); exit }}')
+
+if [ -z "$dev" ]; then
+    echo '{"text":"󰤭","alt":"disconnected","class":"disconnected","tooltip":"No network connection"}'
+    exit 0
+fi
+
+if [ -d "/sys/class/net/$dev/wireless" ]; then
+    # Wireless link: show only the icon, name the SSID in the tooltip.
+    ssid=$(nmcli -t -f active,ssid dev wifi 2>/dev/null \
+        | awk -F: '/^yes/ { print $2; exit }')
+    echo "{\"text\":\"󰖩\",\"alt\":\"wifi\",\"class\":\"wifi\",\"tooltip\":\"WiFi: ${ssid:-unknown} ($dev)\"}"
+else
+    # Wired link: show only the icon, name the device in the tooltip.
+    echo "{\"text\":\"󰈀\",\"alt\":\"ethernet\",\"class\":\"ethernet\",\"tooltip\":\"Ethernet: $dev\"}"
+fi

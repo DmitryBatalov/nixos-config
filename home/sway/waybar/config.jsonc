@@ -10,6 +10,7 @@
         "memory",
         "cpu",
         "temperature",
+        "custom/network",
         "custom/ssh-tunnel",
         "pulseaudio",
         "sway/language",
@@ -61,6 +62,12 @@
         "critical-threshold": 90,
         "warning-threshold": 70,
         "interval": 30
+    },
+
+    "custom/network": {
+        "exec": "$HOME/.config/sway/scripts/network-waybar",
+        "return-type": "json",
+        "interval": 5
     },
 
     "custom/ssh-tunnel": {

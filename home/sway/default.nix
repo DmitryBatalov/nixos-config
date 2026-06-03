@@ -62,6 +62,10 @@
       source = ./scripts/register-fido2;
       executable = true;
     };
+    ".config/sway/scripts/network-waybar" = {
+      source = ./scripts/network-waybar;
+      executable = true;
+    };
     ".config/sway/scripts/ssh-tunnel-toggle" = {
       source = ./scripts/ssh-tunnel-toggle;
       executable = true;
