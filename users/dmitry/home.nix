@@ -1,6 +1,7 @@
 {
   pkgs,
   nixpkgs-unstable,
+  nixpkgs-rider,
   nixvim-config,
   claude-config,
   config,
@@ -12,7 +13,16 @@ let
     inherit (pkgs.stdenv.hostPlatform) system;
     config.allowUnfree = true; # Explicit config for unstable
   };
-  riderPkgs = import ../../home/programs/rider-fhs.nix { inherit pkgs unstable; };
+  # Rider is pinned to a specific nixpkgs-unstable rev (see flake.nix) so it
+  # reuses the build already in the store instead of re-downloading the tarball.
+  riderUnstable = import nixpkgs-rider {
+    inherit (pkgs.stdenv.hostPlatform) system;
+    config.allowUnfree = true;
+  };
+  riderPkgs = import ../../home/programs/rider-fhs.nix {
+    inherit pkgs;
+    unstable = riderUnstable;
+  };
 
   # KeePassXC native messaging manifest for Chromium.
   # The nixpkgs keepassxc only ships a Firefox manifest (allowed_extensions);

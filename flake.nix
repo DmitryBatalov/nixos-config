@@ -4,6 +4,12 @@
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-26.05";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # Pinned for Rider ONLY. This is the last nixpkgs-unstable rev whose
+    # jetbrains.rider derivation matches the build already in the Nix store.
+    # JetBrains 451-blocks downloads from our datacenter proxy exit, so any
+    # rebuild from a newer rev can't fetch the tarball. Pinning here reuses the
+    # cached build (no download). Revisit once a working download path exists.
+    nixpkgs-rider.url = "github:NixOS/nixpkgs/331800de5053fcebacf6813adb5db9c9dca22a0c";
     home-manager = {
       url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
