@@ -95,9 +95,11 @@ in
         BROWSER = "chromium";
       };
       shellAliases = {
+        v = "nvim";
         lg = "lazygit";
         dcu = "docker compose up -d";
         dcd = "docker compose down";
+        dcdv = "docker compose down -v";
         dcs = "docker compose stop";
         dcr = "docker compose stop && docker compose up -d";
       };
