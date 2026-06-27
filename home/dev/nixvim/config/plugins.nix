@@ -73,11 +73,23 @@
       };
     };
 
-    # Live markdown preview in browser (:MarkdownPreview)
+    # Live markdown preview in browser (:MarkdownPreview) — fallback for
+    # complex renders (mermaid, big tables). Default view is render-markdown below.
     markdown-preview = {
       enable = true;
       settings = {
         plantuml_url = "http://www.plantuml.com/plantuml/svg/";
+      };
+    };
+
+    # In-buffer markdown rendering (no browser) — headings, code blocks,
+    # tables, bullets, checkboxes drawn inline via treesitter. The line under
+    # the cursor shows raw markdown so you can still edit. Inline images render
+    # via the snacks.image module enabled above. Toggle with :RenderMarkdown toggle.
+    render-markdown = {
+      enable = true;
+      settings = {
+        anti_conceal.enabled = true;
       };
     };
 

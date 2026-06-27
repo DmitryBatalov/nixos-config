@@ -274,6 +274,14 @@
         desc = "[M]arkdown Preview [T]oggle";
       };
     }
+    {
+      mode = "n";
+      key = "<leader>mr";
+      action = "<cmd>RenderMarkdown toggle<CR>";
+      options = {
+        desc = "[M]arkdown in-buffer [R]ender toggle";
+      };
+    }
     # Typst Preview
     {
       mode = "n";
