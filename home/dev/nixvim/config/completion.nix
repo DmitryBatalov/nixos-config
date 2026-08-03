@@ -1,12 +1,11 @@
-{ pkgs, ... }:
-{
+{pkgs, ...}: {
   plugins = {
     # Snippet engine
     luasnip = {
       enable = true;
       fromVscode = [
         {}
-        { paths = ../snippets; }
+        {paths = ../snippets;}
       ];
     };
     friendly-snippets.enable = true;
@@ -48,11 +47,11 @@
           '';
         };
         sources = [
-          { name = "nvim_lsp"; }
-          { name = "luasnip"; }
-          { name = "vim-dadbod-completion"; }
-          { name = "path"; }
-          { name = "buffer"; }
+          {name = "nvim_lsp";}
+          {name = "luasnip";}
+          {name = "vim-dadbod-completion";}
+          {name = "path";}
+          {name = "buffer";}
         ];
       };
     };

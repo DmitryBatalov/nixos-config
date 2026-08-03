@@ -1,5 +1,4 @@
-{ pkgs, ... }:
-{
+{pkgs, ...}: {
   extraPackages = with pkgs; [
     tlaplus-toolbox
     alloy
@@ -109,13 +108,13 @@
           end
         '';
         formatters_by_ft = {
-          nix = [ "alejandra" ];
-          lua = [ "stylua" ];
-          markdown = [ "prettier" ];
-          javascript = [ "prettier" ];
-          typescript = [ "prettier" ];
-          javascriptreact = [ "prettier" ];
-          typescriptreact = [ "prettier" ];
+          nix = ["alejandra"];
+          lua = ["stylua"];
+          markdown = ["prettier"];
+          javascript = ["prettier"];
+          typescript = ["prettier"];
+          javascriptreact = ["prettier"];
+          typescriptreact = ["prettier"];
         };
       };
     };
@@ -160,20 +159,20 @@
           };
         };
         sections = {
-          lualine_a = [ "mode" ];
+          lualine_a = ["mode"];
           lualine_b = [
             "branch"
             "diff"
             "diagnostics"
           ];
-          lualine_c = [ "filename" ];
+          lualine_c = ["filename"];
           lualine_x = [
             "encoding"
             "fileformat"
             "filetype"
           ];
-          lualine_y = [ "progress" ];
-          lualine_z = [ "location" ];
+          lualine_y = ["progress"];
+          lualine_z = ["location"];
         };
       };
     };

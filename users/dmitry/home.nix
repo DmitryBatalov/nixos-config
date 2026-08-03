@@ -7,8 +7,7 @@
   config,
   lib,
   ...
-}:
-let
+}: let
   unstable = import nixpkgs-unstable {
     inherit (pkgs.stdenv.hostPlatform) system;
     config.allowUnfree = true; # Explicit config for unstable
@@ -41,8 +40,7 @@ let
       ];
     };
   };
-in
-{
+in {
   imports = [
     ../../home/core.nix
 
@@ -78,7 +76,7 @@ in
   programs = {
     git = {
       enable = true;
-      ignores = [ ".claude/" ];
+      ignores = [".claude/"];
       settings = {
         user = {
           name = "dmitry.batalov";
@@ -162,9 +160,9 @@ in
     chromium = {
       enable = true;
       extensions = [
-        { id = "oboonakemofpalcgghocfoadofidjkkk"; } # KeePassXC-Browser
+        {id = "oboonakemofpalcgghocfoadofidjkkk";} # KeePassXC-Browser
       ];
-      nativeMessagingHosts = [ keepassxcChromiumHost ];
+      nativeMessagingHosts = [keepassxcChromiumHost];
     };
 
     keepassxc = {
@@ -206,7 +204,6 @@ in
         set -g allow-passthrough on
       '';
     };
-
   };
 
   xdg = {
@@ -226,7 +223,7 @@ in
       exec = "chromium --proxy-server=\"socks5://127.0.0.1:1081\" %U";
       icon = "chromium";
       comment = "Chromium Web Browser with SOCKS proxy via SSH tunnel";
-      categories = [ "Network" "WebBrowser" ];
+      categories = ["Network" "WebBrowser"];
       terminal = false;
     };
     desktopEntries.rider = {
@@ -234,7 +231,7 @@ in
       exec = "rider";
       icon = "${riderPkgs.rider}/share/pixmaps/rider.svg";
       comment = "JetBrains Rider IDE";
-      categories = [ "Development" "IDE" ];
+      categories = ["Development" "IDE"];
       terminal = false;
     };
   };

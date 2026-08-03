@@ -35,6 +35,10 @@
     disko,
     ...
   }: {
+    # Matches the alejandra formatter nixvim uses (conform.nvim) so `nix fmt`
+    # and editor-on-save formatting agree.
+    formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.alejandra;
+
     nixosConfigurations = {
       nixos = let
         username = "dmitry";

@@ -6,9 +6,9 @@
     logind = {
       settings = {
         Login = {
-          HandleLidSwitchDocked = "ignore";          # External monitor connected → stay on
-          HandleLidSwitchExternalPower = "ignore";   # Power → stay on (logind doesn't detect dock via DP hub)
-          HandleLidSwitch = "hibernate";             # No power → hibernate
+          HandleLidSwitchDocked = "ignore"; # External monitor connected → stay on
+          HandleLidSwitchExternalPower = "ignore"; # Power → stay on (logind doesn't detect dock via DP hub)
+          HandleLidSwitch = "hibernate"; # No power → hibernate
         };
       };
     };

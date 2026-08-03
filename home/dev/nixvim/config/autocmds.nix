@@ -27,7 +27,7 @@
     #  Try it with `yap` in normal mode
     #  See `:help vim.hl.on_yank()`
     {
-      event = [ "TextYankPost" ];
+      event = ["TextYankPost"];
       desc = "Highlight when yanking (copying) text";
       group = "kickstart-highlight-yank";
       callback.__raw = ''
@@ -38,8 +38,8 @@
     }
     # Expand all folds in DBUI result buffers
     {
-      event = [ "FileType" ];
-      pattern = [ "dbout" ];
+      event = ["FileType"];
+      pattern = ["dbout"];
       callback.__raw = ''
         function()
           vim.opt_local.foldenable = false

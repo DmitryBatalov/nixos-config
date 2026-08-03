@@ -1,5 +1,7 @@
-{ pkgs, unstable }:
-let
+{
+  pkgs,
+  unstable,
+}: let
   proxychainsConf = pkgs.writeText "proxychains.conf" ''
     strict_chain
     quiet_mode
@@ -18,8 +20,8 @@ let
       outputHash = old.src.outputHash;
       outputHashAlgo = "sha256";
       outputHashMode = "flat";
-      nativeBuildInputs = [ pkgs.curl pkgs.cacert ];
-      phases = [ "installPhase" ];
+      nativeBuildInputs = [pkgs.curl pkgs.cacert];
+      phases = ["installPhase"];
       installPhase = ''
         curl -L --socks5-hostname 127.0.0.1:1081 -o $out ${old.src.url}
       '';
@@ -36,10 +38,8 @@ let
   };
 
   dotnet = with pkgs.dotnetCorePackages;
-    combinePackages [ dotnet_10.sdk dotnet_8.sdk pkgsWithInsecure.dotnet-sdk_6 ];
-
-in
-{
+    combinePackages [dotnet_10.sdk dotnet_8.sdk pkgsWithInsecure.dotnet-sdk_6];
+in {
   rider = rider;
   fhs = pkgs.buildFHSEnv {
     name = "rider";
