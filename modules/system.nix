@@ -25,6 +25,8 @@
   nix.settings = {
     # enable flakes globally
     experimental-features = ["nix-command" "flakes"];
+    # hard-link identical files in the store to save disk (complements weekly GC)
+    auto-optimise-store = true;
   };
 
   # do garbage collection weekly to keep disk usage low
@@ -95,22 +97,6 @@
     no_proxy = "localhost,127.0.0.1,cache.nixos.org,channels.nixos.org";
   };
 
-  # networking.firewall.allowedTCPPorts = [ ... ];
-  # networking.firewall.allowedUDPPorts = [ ... ];
-  # Or disable the firewall altogether.
-  # networking.firewall.enable = false;
-
-  # Enable the OpenSSH daemon.
-  #services.openssh = {
-  #  enable = true;
-  #  settings = {
-  #    X11Forwarding = true;
-  #    PermitRootLogin = "no"; # disable root login
-  #    PasswordAuthentication = false; # disable password login
-  #  };
-  #  openFirewall = true;
-  #};
-
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
@@ -120,11 +106,8 @@
     git
     jq
     tree
-    sysstat
     lm_sensors # for `sensors` command
 
-    grim # screenshot tool for Wayland (sway)
-    slurp # region selector for Wayland (sway)
     fastfetch
     nautilus
     pavucontrol
@@ -183,45 +166,53 @@
       wireplumber.extraConfig = {
         # Boost Bluetooth sink priority so it's always preferred
         "10-bluetooth-priority" = {
-          "monitor.bluez.rules" = [{
-            matches = [{ "node.name" = "~bluez_output.*"; }];
-            actions.update-props = {
-              "priority.session" = 2000;
-              "priority.driver" = 2000;
-            };
-          }];
+          "monitor.bluez.rules" = [
+            {
+              matches = [{"node.name" = "~bluez_output.*";}];
+              actions.update-props = {
+                "priority.session" = 2000;
+                "priority.driver" = 2000;
+              };
+            }
+          ];
         };
 
         # Force Speaker profile instead of Headphones on the laptop sound card
         "10-laptop-speaker-profile" = {
-          "monitor.alsa.rules" = [{
-            matches = [{ "device.name" = "alsa_card.pci-0000_00_1f.3-platform-skl_hda_dsp_generic"; }];
-            actions.update-props = {
-              "api.alsa.use-acp" = true;
-              "api.acp.auto-profile" = false;
-              "device.profile" = "HiFi (HDMI1, HDMI2, HDMI3, Mic1, Mic2, Speaker)";
-            };
-          }];
+          "monitor.alsa.rules" = [
+            {
+              matches = [{"device.name" = "alsa_card.pci-0000_00_1f.3-platform-skl_hda_dsp_generic";}];
+              actions.update-props = {
+                "api.alsa.use-acp" = true;
+                "api.acp.auto-profile" = false;
+                "device.profile" = "HiFi (HDMI1, HDMI2, HDMI3, Mic1, Mic2, Speaker)";
+              };
+            }
+          ];
         };
 
         # Headphones (3.5mm jack) preferred over built-in speakers
         "10-laptop-headphones-defaults" = {
-          "monitor.alsa.rules" = [{
-            matches = [{ "node.name" = "~alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__Headphones__sink"; }];
-            actions.update-props = {
-              "priority.session" = 800;
-            };
-          }];
+          "monitor.alsa.rules" = [
+            {
+              matches = [{"node.name" = "~alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__Headphones__sink";}];
+              actions.update-props = {
+                "priority.session" = 800;
+              };
+            }
+          ];
         };
 
         # Lower laptop speaker priority so BT, headphones, and dock are preferred
         "10-laptop-speaker-defaults" = {
-          "monitor.alsa.rules" = [{
-            matches = [{ "node.name" = "~alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__Speaker__sink"; }];
-            actions.update-props = {
-              "priority.session" = 500;
-            };
-          }];
+          "monitor.alsa.rules" = [
+            {
+              matches = [{"node.name" = "~alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__Speaker__sink";}];
+              actions.update-props = {
+                "priority.session" = 500;
+              };
+            }
+          ];
         };
       };
     };

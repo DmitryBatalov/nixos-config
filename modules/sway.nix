@@ -12,8 +12,7 @@
       dunst
       wl-clipboard
       wl-clip-persist
-      grim
-      slurp
+      grim # flameshot's Wayland capture backend (useGrimAdapter=true)
       brightnessctl
       kanshi
       wdisplays
@@ -52,5 +51,4 @@
     gvfs.enable = true;
     tumbler.enable = true;
   };
-
 }
