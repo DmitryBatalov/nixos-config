@@ -63,6 +63,7 @@ in {
     pkgs.xournalpp
     pkgs.typst
     pkgs.mongosh
+    pkgs.mongodb-compass
     pkgs.mariadb.client
     nixvim-config.packages.${pkgs.stdenv.hostPlatform.system}.default
     claude-config.packages.${pkgs.stdenv.hostPlatform.system}.default
