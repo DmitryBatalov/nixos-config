@@ -184,8 +184,11 @@ bindsym $mod+Shift+n exec ~/.config/sway/scripts/empty_workspace
 # Multimedia Keys
 
 # volume (waybar handles its own updates, no signal needed)
-bindsym XF86AudioRaiseVolume exec wpctl set-volume @DEFAULT_SINK@ +5%
-bindsym XF86AudioLowerVolume exec wpctl set-volume @DEFAULT_SINK@ -5%
+# wpctl wants the sign AFTER the percentage (VOL%[-/+]); "+5%" is rejected
+# with "Invalid volume argument" and silently does nothing, since sway
+# discards exec output.
+bindsym XF86AudioRaiseVolume exec wpctl set-volume -l 1.0 @DEFAULT_SINK@ 5%+
+bindsym XF86AudioLowerVolume exec wpctl set-volume @DEFAULT_SINK@ 5%-
 bindsym XF86AudioMute exec wpctl set-mute @DEFAULT_SINK@ toggle
 
 # audio control
