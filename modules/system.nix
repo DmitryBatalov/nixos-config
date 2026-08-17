@@ -86,15 +86,29 @@
     gnupg.agent.enable = true;
   };
 
-  # Route nix-daemon's HTTP fetches through the SSH SOCKS5 tunnel on :1081.
-  # cache.nixos.org goes direct (no SOCKS5 dependency for cached builds);
-  # FOD source URLs (github, ziglang.org, etc.) go through the proxy so
-  # geo-blocked / DPI-filtered fetches succeed transparently.
+  # Route ALL of nix-daemon's HTTP fetches through the SSH SOCKS5 tunnel on
+  # :1081, including cache.nixos.org.
+  #
+  # cache.nixos.org used to go direct to avoid a SOCKS5 dependency for cached
+  # builds. That broke on 2026-08-17: cache.nixos.org is Fastly anycast, and
+  # our ISP's routing to 3 of its 4 IPs is blackholed -- TCP connects, then
+  # packets are silently dropped. Only 151.101.65.91 answered (the others timed
+  # out), so which IP curl picked decided whether a build worked. The daemon
+  # opens many parallel connections, most landed on dead POPs, its curl threads
+  # wedged and it died with SIGABRT ("Nix daemon disconnected unexpectedly").
+  #
+  # Through the tunnel: 8/8 requests OK at ~0.35s. Pinning the one good IP via
+  # extraHosts would be faster (~0.19s) but throws away anycast failover and
+  # breaks silently when Fastly rotates POPs.
+  #
+  # Trade-off accepted: the tunnel is now a hard dependency for every build.
+  # If builds start timing out, check ssh-tunnel first -- systemd reports it
+  # active even when it has stopped carrying traffic.
   systemd.services.nix-daemon.environment = {
     https_proxy = "socks5h://127.0.0.1:1081";
     http_proxy = "socks5h://127.0.0.1:1081";
     all_proxy = "socks5h://127.0.0.1:1081";
-    no_proxy = "localhost,127.0.0.1,cache.nixos.org,channels.nixos.org";
+    no_proxy = "localhost,127.0.0.1";
   };
 
   # List packages installed in system profile. To search, run:
