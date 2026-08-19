@@ -103,6 +103,56 @@
       end
     end
 
+    -- FSAC appends a VS Code-only widget to every hover for a symbol that has
+    -- an XmlDocSig:
+    --   <a href='command:fsharp.showDocumentation?...'>Open the documentation</a>
+    -- command: URIs are a VS Code mechanism -- Ionide registers the command and
+    -- VS Code's markdown renderer whitelists the link. Neovim renders hover as
+    -- plain markdown with no HTML parsing, so the raw tag shows up instead.
+    -- FSAC 0.83 has no setting to suppress it, so strip it client-side.
+    --
+    -- This has to hook open_floating_preview, NOT a textDocument/hover handler:
+    -- since 0.11 vim.lsp.buf.hover() passes its own callback to buf_request_all
+    -- and renders the result itself, so neither client.handlers nor
+    -- vim.lsp.handlers.hover is ever consulted (see runtime lua/vim/lsp/buf.lua).
+    -- By open_floating_preview time the payload is already a string[] of
+    -- markdown lines, so scrub per line and drop lines that were only the widget.
+    local function fsharp_scrub_vscode_links(s)
+      return (s:gsub("<a href='command:[^']*'>.-</a>", ""))
+    end
+
+    local _open_floating_preview = vim.lsp.util.open_floating_preview
+    vim.lsp.util.open_floating_preview = function(contents, syntax, opts, ...)
+      if type(contents) == 'table' then
+        -- Cheap scan first: leave every other hover's table untouched, so this
+        -- is a genuine no-op for non-F# servers rather than a rebuild-per-hover.
+        local found = false
+        for _, line in ipairs(contents) do
+          if type(line) == 'string' and line:find("<a href='command:", 1, true) then
+            found = true
+            break
+          end
+        end
+        if found then
+          local kept = {}
+          for _, line in ipairs(contents) do
+            if type(line) == 'string' then
+              local had_link = line:find("<a href='command:", 1, true) ~= nil
+              local scrubbed = fsharp_scrub_vscode_links(line)
+              -- drop the line entirely if the widget was all it contained
+              if not (had_link and scrubbed:match('^%s*$')) then
+                kept[#kept + 1] = scrubbed
+              end
+            else
+              kept[#kept + 1] = line
+            end
+          end
+          contents = kept
+        end
+      end
+      return _open_floating_preview(contents, syntax, opts, ...)
+    end
+
     -- Disable AutomaticWorkspaceInit. With multiple .sln files in one
     -- workspace root fsautocomplete picks one alphabetically; here we let
     -- the user choose explicitly via a telescope prompt on attach (or
