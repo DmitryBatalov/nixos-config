@@ -1,18 +1,13 @@
 {
   pkgs,
-  nixpkgs-unstable,
-  nixpkgs-rider,
-  nixvim-config,
-  claude-config,
+  inputs,
   ...
 }: let
-  unstable = import nixpkgs-unstable {
-    inherit (pkgs.stdenv.hostPlatform) system;
-    config.allowUnfree = true; # Explicit config for unstable
-  };
   # Rider is pinned to a specific nixpkgs-unstable rev (see flake.nix) so it
   # reuses the build already in the store instead of re-downloading the tarball.
-  riderUnstable = import nixpkgs-rider {
+  # This one stays a direct import: it is a different nixpkgs rev from
+  # pkgs.unstable, and it has exactly one consumer.
+  riderUnstable = import inputs.nixpkgs-rider {
     inherit (pkgs.stdenv.hostPlatform) system;
     config.allowUnfree = true;
   };
@@ -50,7 +45,7 @@ in {
 
   home.packages = [
     pkgs.flameshot
-    unstable.telegram-desktop
+    pkgs.unstable.telegram-desktop
     pkgs.libreoffice-qt6-fresh
     riderPkgs.fhs
     pkgs.freecad
@@ -67,8 +62,8 @@ in {
     # "wrapGAppsHookHasRunForOutput: bad array subscript". Unfree, so it is
     # never in the binary cache and always builds locally. Re-add once fixed.
     pkgs.mariadb.client
-    nixvim-config.packages.${pkgs.stdenv.hostPlatform.system}.default
-    claude-config.packages.${pkgs.stdenv.hostPlatform.system}.default
+    inputs.nixvim-config.packages.${pkgs.stdenv.hostPlatform.system}.default
+    inputs.claude-config.packages.${pkgs.stdenv.hostPlatform.system}.default
     pkgs.xdg-terminal-exec
   ];
 

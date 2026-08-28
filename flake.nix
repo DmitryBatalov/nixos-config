@@ -36,7 +36,7 @@
     nixosConfigurations = {
       nixos = let
         username = "dmitry";
-        specialArgs = {inherit username;};
+        specialArgs = {inherit inputs username;};
       in
         nixpkgs.lib.nixosSystem {
           inherit specialArgs;
@@ -51,7 +51,7 @@
                 useGlobalPkgs = true;
                 useUserPackages = true;
 
-                extraSpecialArgs = inputs // specialArgs;
+                extraSpecialArgs = specialArgs;
                 users.${username} = import ./users/${username}/home.nix;
                 backupFileExtension = "backup";
               };
@@ -61,7 +61,7 @@
 
       vega = let
         username = "dmitry";
-        specialArgs = {inherit username;};
+        specialArgs = {inherit inputs username;};
       in
         nixpkgs.lib.nixosSystem {
           inherit specialArgs;

@@ -3,6 +3,7 @@
 # https://search.nixos.org/options and in the NixOS manual (`nixos-help`).
 {...}: {
   imports = [
+    ../../modules/overlays.nix
     ../../modules/system.nix
     ../../modules/sway.nix
     ../../modules/docker.nix
