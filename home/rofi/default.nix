@@ -1,4 +1,4 @@
-{...}: {
+{
   # https://github.com/endeavouros-team/endeavouros-i3wm-setup
   xdg.configFile."rofi" = {
     source = ./configs;

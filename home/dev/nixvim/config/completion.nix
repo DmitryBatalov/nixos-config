@@ -1,4 +1,4 @@
-{...}: {
+{
   plugins = {
     # Snippet engine
     luasnip = {
