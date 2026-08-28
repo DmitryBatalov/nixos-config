@@ -14,10 +14,6 @@
       url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    disko = {
-      url = "github:nix-community/disko";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     nixvim-config = {
       url = "path:./home/dev/nixvim";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
@@ -29,10 +25,8 @@
   };
 
   outputs = inputs @ {
-    self,
     nixpkgs,
     home-manager,
-    disko,
     ...
   }: {
     # Matches the alejandra formatter nixvim uses (conform.nvim) so `nix fmt`

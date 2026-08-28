@@ -4,8 +4,6 @@
   nixpkgs-rider,
   nixvim-config,
   claude-config,
-  config,
-  lib,
   ...
 }: let
   unstable = import nixpkgs-unstable {

@@ -1,4 +1,4 @@
-{pkgs, ...}: {
+{...}: {
   services = {
     # Auto-detect connected displays and apply saved xrandr profiles
     autorandr.enable = true;

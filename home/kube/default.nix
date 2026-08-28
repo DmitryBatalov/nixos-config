@@ -1,7 +1,6 @@
 {
   pkgs,
   nixpkgs-unstable,
-  config,
   ...
 }: let
   unstable = import nixpkgs-unstable {
