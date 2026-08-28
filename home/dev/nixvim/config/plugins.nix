@@ -1,4 +1,28 @@
-{pkgs, ...}: {
+{pkgs, ...}: let
+  # nixpkgs wraps fsautocomplete with LD_LIBRARY_PATH=<icu4c>/lib and derives
+  # DOTNET_ROOT from `which dotnet`. When a project's devShell pins an older
+  # nixpkgs than this config, the `dotnet` child processes Ionide.ProjInfo
+  # spawns inherit that LD_LIBRARY_PATH and then fail to load libcoreclr with
+  # `GLIBC_ABI_GNU2_TLS' not found (required by .../libicuuc.so)`, taking the
+  # whole server down on startup. Keep the DOTNET_ROOT discovery, drop the
+  # LD_LIBRARY_PATH injection, and let FSAC's own apphost RUNPATH supply ICU.
+  fsautocomplete-cmd = let
+    sdk = pkgs.dotnetCorePackages.sdk_8_0;
+  in
+    pkgs.writeShellScript "fsautocomplete-cmd" ''
+      if dotnet=$(command -v dotnet) \
+        && dotnet=$(${pkgs.coreutils}/bin/realpath "$dotnet") \
+        && DOTNET_ROOT=$(${pkgs.coreutils}/bin/dirname "$dotnet"); then
+        export DOTNET_ROOT
+      else
+        export DOTNET_ROOT=${sdk}/share/dotnet
+      fi
+      # Keep upstream's other guarantee: *some* `dotnet` on PATH. Fantomas.Client
+      # starts `dotnet tool list` by bare name, which resolves via PATH only.
+      export PATH=$PATH:${sdk}/bin
+      exec ${pkgs.fsautocomplete}/lib/fsautocomplete/fsautocomplete "$@"
+    '';
+in {
   extraPackages = with pkgs; [
     tlaplus-toolbox
     alloy
@@ -404,6 +428,10 @@
         # F# lsp
         fsautocomplete = {
           enable = true;
+          cmd = [
+            "${fsautocomplete-cmd}"
+            "--adaptive-lsp-server-enabled"
+          ];
           onAttach.function = ''
             -- Disable semantic tokens; they trigger a retry storm that hangs
             -- nvim on F# projects targeting non-.NET-8 frameworks (net6, net10).
