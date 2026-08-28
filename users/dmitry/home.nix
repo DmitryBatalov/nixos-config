@@ -172,6 +172,11 @@ in {
     };
     chromium = {
       enable = true;
+      # Baked into the wrapper, so the stock chromium-browser.desktop and a
+      # bare `chromium` in a terminal both go through the SSH tunnel. Replaces
+      # the hand-written "Chromium (Proxy)" desktop entry that used to exist
+      # only to carry this flag. See chromium-direct below for the way out.
+      commandLineArgs = ["--proxy-server=socks5://127.0.0.1:1081"];
       extensions = [
         {id = "oboonakemofpalcgghocfoadofidjkkk";} # KeePassXC-Browser
       ];
@@ -224,18 +229,24 @@ in {
     autostart.enable = true;
     mimeApps = {
       enable = true;
+      # Still pinned explicitly: firefox is enabled too, so leaving these to
+      # xdg-mime's guess risks handing http:// to the wrong browser.
       defaultApplications = {
-        "x-scheme-handler/http" = "chromium-proxy.desktop";
-        "x-scheme-handler/https" = "chromium-proxy.desktop";
-        "text/html" = "chromium-proxy.desktop";
+        "x-scheme-handler/http" = "chromium-browser.desktop";
+        "x-scheme-handler/https" = "chromium-browser.desktop";
+        "text/html" = "chromium-browser.desktop";
         "application/pdf" = "org.gnome.Evince.desktop";
       };
     };
-    desktopEntries.chromium-proxy = {
-      name = "Chromium (Proxy)";
-      exec = "chromium --proxy-server=\"socks5://127.0.0.1:1081\" %U";
+    # Escape hatch for when the SSH tunnel is down -- it has died silently
+    # before, and systemd still reports the unit active when it does.
+    # --no-proxy-server is checked before the other proxy switches, so it wins
+    # over the --proxy-server baked into the wrapper regardless of flag order.
+    desktopEntries.chromium-direct = {
+      name = "Chromium (Direct)";
+      exec = "chromium --no-proxy-server %U";
       icon = "chromium";
-      comment = "Chromium Web Browser with SOCKS proxy via SSH tunnel";
+      comment = "Chromium with the SOCKS proxy bypassed";
       categories = ["Network" "WebBrowser"];
       terminal = false;
     };
