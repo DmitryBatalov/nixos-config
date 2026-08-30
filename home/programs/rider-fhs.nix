@@ -12,21 +12,16 @@
     socks5 127.0.0.1 1081
   '';
 
-  # Override Rider source to fetch via SOCKS5 proxy
-  riderBase = unstable.jetbrains.rider;
-  rider = riderBase.overrideAttrs (old: {
-    src = pkgs.stdenvNoCC.mkDerivation {
-      name = old.src.name;
-      outputHash = old.src.outputHash;
-      outputHashAlgo = "sha256";
-      outputHashMode = "flat";
-      nativeBuildInputs = [pkgs.curl pkgs.cacert];
-      phases = ["installPhase"];
-      installPhase = ''
-        curl -L --socks5-hostname 127.0.0.1:1081 -o $out ${old.src.url}
-      '';
-    };
-  });
+  # Plain upstream Rider. This used to carry an overrideAttrs that swapped src
+  # for a hand-rolled FOD curling through the SOCKS proxy; it was redundant on
+  # two counts. fetchurl already declares all_proxy/https_proxy in its
+  # impureEnvVars, and modules/system.nix puts those on the nix-daemon, so
+  # stock fetchurl goes through the tunnel by itself. And because Nix hashes
+  # derivations modulo fixed-output derivations, the replacement src had the
+  # same outputHash and therefore produced a byte-identical rider outPath
+  # (bv4xnpca...) -- it could not have changed the result even in principle.
+  # What actually keeps this working is the nixpkgs-rider pin in flake.nix.
+  rider = unstable.jetbrains.rider;
 
   pkgsWithInsecure = import pkgs.path {
     inherit (pkgs.stdenv.hostPlatform) system;
@@ -40,7 +35,7 @@
   dotnet = with pkgs.dotnetCorePackages;
     combinePackages [dotnet_10.sdk dotnet_8.sdk pkgsWithInsecure.dotnet-sdk_6];
 in {
-  rider = rider;
+  inherit rider;
   fhs = pkgs.buildFHSEnv {
     name = "rider";
 
