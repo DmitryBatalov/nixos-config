@@ -5,6 +5,7 @@
   ...
 }: {
   imports = [
+    ../../modules
     ./hardware-configuration.nix
   ];
 
@@ -24,23 +25,13 @@
 
   # ============================= User =============================
 
-  users.users.${username} = {
-    isNormalUser = true;
-    extraGroups = ["wheel"];
-    openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDaci07bJRxAFOdZIX+INNbEVmXhERlKShpfVoGRPga/ dmitry"
-    ];
-  };
+  # isNormalUser and the wheel group come from modules/core.nix; only the key
+  # is specific to this host.
+  users.users.${username}.openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDaci07bJRxAFOdZIX+INNbEVmXhERlKShpfVoGRPga/ dmitry"
+  ];
 
-  # ============================= Nix =============================
-
-  nix.settings.experimental-features = ["nix-command" "flakes"];
-  nix.gc = {
-    automatic = true;
-    dates = "weekly";
-    options = "--delete-older-than 7d";
-  };
-  nixpkgs.config.allowUnfree = true;
+  # Nix settings, weekly GC and allowUnfree also come from modules/core.nix.
 
   # ============================= Locale =============================
 
@@ -132,11 +123,8 @@
     fi
   '';
 
+  # vim/wget/curl/git come from modules/core.nix.
   environment.systemPackages = with pkgs; [
-    vim
-    wget
-    curl
-    git
     htop
     xray
   ];
