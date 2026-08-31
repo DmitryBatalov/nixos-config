@@ -20,7 +20,17 @@
       '';
     };
 
-    proxy.nixDaemon.enable = true;
+    # Change the tunnel endpoint here and nowhere else: the user service, the
+    # chromium flag, Rider's proxychains config and the nix-daemon env all
+    # derive from these.
+    proxy = {
+      nixDaemon.enable = true;
+      remote = {
+        host = "45.151.68.245"; # vega
+        user = "dmitry";
+        port = 443;
+      };
+    };
 
     desktop = {
       enable = true;

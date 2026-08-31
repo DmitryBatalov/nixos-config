@@ -1,6 +1,8 @@
 {
   pkgs,
   unstable,
+  socksAddress,
+  socksPort,
 }: let
   proxychainsConf = pkgs.writeText "proxychains.conf" ''
     strict_chain
@@ -9,13 +11,13 @@
     localnet 127.0.0.0/255.0.0.0
 
     [ProxyList]
-    socks5 127.0.0.1 1081
+    socks5 ${socksAddress} ${toString socksPort}
   '';
 
   # Plain upstream Rider. This used to carry an overrideAttrs that swapped src
   # for a hand-rolled FOD curling through the SOCKS proxy; it was redundant on
   # two counts. fetchurl already declares all_proxy/https_proxy in its
-  # impureEnvVars, and modules/system.nix puts those on the nix-daemon, so
+  # impureEnvVars, and modules/proxy.nix puts those on the nix-daemon, so
   # stock fetchurl goes through the tunnel by itself. And because Nix hashes
   # derivations modulo fixed-output derivations, the replacement src had the
   # same outputHash and therefore produced a byte-identical rider outPath

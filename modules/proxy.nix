@@ -4,19 +4,40 @@
   ...
 }: let
   cfg = config.local.proxy;
-  socks = "socks5h://${cfg.host}:${toString cfg.port}";
+  socks = "socks5h://${cfg.socksAddress}:${toString cfg.socksPort}";
 in {
+  # The single source of truth for the SOCKS5 tunnel. The endpoint has moved
+  # twice already (vega -> critical-olive -> vega), so the home-manager side
+  # reads these through `osConfig` rather than repeating the numbers.
   options.local.proxy = {
-    host = lib.mkOption {
+    socksAddress = lib.mkOption {
       type = lib.types.str;
       default = "127.0.0.1";
-      description = "Address of the local SOCKS5 endpoint served by the ssh-tunnel user service.";
+      description = "Address the local SOCKS5 proxy listens on.";
     };
 
-    port = lib.mkOption {
+    socksPort = lib.mkOption {
       type = lib.types.port;
       default = 1081;
-      description = "Port of the local SOCKS5 endpoint.";
+      description = "Port the local SOCKS5 proxy listens on.";
+    };
+
+    remote = {
+      host = lib.mkOption {
+        type = lib.types.str;
+        description = "Host the ssh-tunnel user service dials out to.";
+      };
+
+      user = lib.mkOption {
+        type = lib.types.str;
+        description = "SSH user on the tunnel host.";
+      };
+
+      port = lib.mkOption {
+        type = lib.types.port;
+        default = 22;
+        description = "SSH port on the tunnel host.";
+      };
     };
 
     nixDaemon.enable =
