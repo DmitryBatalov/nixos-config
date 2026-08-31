@@ -26,8 +26,11 @@
     proxy = {
       nixDaemon.enable = true;
       remote = {
-        # The box serving the tunnel. It used to be managed from this repo as
-        # the `vega` host; that config is gone, the endpoint is unchanged.
+        # Load-bearing. This is the upstream end of the SOCKS5 tunnel, and it
+        # is a separate concern from any host this repo deploys -- nothing here
+        # manages this box. Everything that reaches the network through the
+        # proxy depends on it: chromium, Rider, and every nix-daemon fetch
+        # including cache.nixos.org, so builds stop working without it.
         host = "45.151.68.245";
         user = "dmitry";
         port = 443;
