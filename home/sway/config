@@ -342,3 +342,22 @@ bindsym $mod+t exec rofi -show window \
 		-config ~/.config/rofi/rofidmenu.rasi
 
 bindsym Print exec flameshot gui
+
+###########################################################
+# NixOS drop-ins (systemd session integration)            #
+###########################################################
+
+# Stock sway's /etc/sway/config ends with this include, and NixOS's
+# programs.sway ships /etc/sway/config.d/nixos.conf there. Because this file
+# replaces /etc/sway/config outright, that drop-in was never loaded, so nothing
+# ever ran `systemctl --user start sway-session.target` -- which left
+# graphical-session.target inactive for the whole session. Anything installed
+# WantedBy=graphical-session.target therefore never started: udiskie (USB
+# auto-mount) had zero journal entries, and ssh-add-keys only ran because
+# ssh-tunnel happens to Require it.
+#
+# Including the drop-in gets the upstream integration verbatim rather than
+# hand-rolling it here: it imports DISPLAY/WAYLAND_DISPLAY/SWAYSOCK, starts
+# sway-session.target (which BindsTo graphical-session.target), and stops it
+# again on sway shutdown.
+include /etc/sway/config.d/*
