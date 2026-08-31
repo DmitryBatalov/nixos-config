@@ -2,6 +2,10 @@
   description = "NixOS from Scratch";
 
   inputs = {
+    # Indirect (registry) ref, unlike every other input here. Rewriting it as
+    # github:NixOS/nixpkgs/nixos-26.05 would re-resolve the input and silently
+    # bump nixpkgs, so it is left for a deliberate flake update rather than
+    # changed as a side effect of a refactor.
     nixpkgs.url = "nixpkgs/nixos-26.05";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     # Pinned for Rider ONLY. This is the last nixpkgs-unstable rev whose
@@ -28,23 +32,24 @@
     nixpkgs,
     home-manager,
     ...
-  }: {
-    # Matches the alejandra formatter nixvim uses (conform.nvim) so `nix fmt`
-    # and editor-on-save formatting agree.
-    formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.alejandra;
+  }: let
+    # Both hosts are x86_64-linux; nothing here is meant to be cross-platform.
+    system = "x86_64-linux";
+    username = "dmitry";
+    specialArgs = {inherit inputs username;};
 
-    nixosConfigurations = {
-      nixos = let
-        username = "dmitry";
-        specialArgs = {inherit inputs username;};
-      in
-        nixpkgs.lib.nixosSystem {
-          inherit specialArgs;
+    # `home` pulls in home-manager as a NixOS module for the one host that has
+    # a graphical user; vega deliberately has none.
+    mkHost = {
+      modules,
+      home ? false,
+    }:
+      nixpkgs.lib.nixosSystem {
+        inherit system specialArgs;
 
-          system = "x86_64-linux";
-          modules = [
-            ./hosts/nixos
-
+        modules =
+          modules
+          ++ nixpkgs.lib.optionals home [
             home-manager.nixosModules.home-manager
             {
               home-manager = {
@@ -57,20 +62,21 @@
               };
             }
           ];
-        };
+      };
+  in {
+    # Matches the alejandra formatter nixvim uses (conform.nvim) so `nix fmt`
+    # and editor-on-save formatting agree.
+    formatter.${system} = nixpkgs.legacyPackages.${system}.alejandra;
 
-      vega = let
-        username = "dmitry";
-        specialArgs = {inherit inputs username;};
-      in
-        nixpkgs.lib.nixosSystem {
-          inherit specialArgs;
+    nixosConfigurations = {
+      nixos = mkHost {
+        modules = [./hosts/nixos];
+        home = true;
+      };
 
-          system = "x86_64-linux";
-          modules = [
-            ./hosts/vega
-          ];
-        };
+      vega = mkHost {
+        modules = [./hosts/vega];
+      };
     };
   };
 }
