@@ -38,8 +38,9 @@
     username = "dmitry";
     specialArgs = {inherit inputs username;};
 
-    # `home` pulls in home-manager as a NixOS module for the one host that has
-    # a graphical user; vega deliberately has none.
+    # `home` pulls in home-manager as a NixOS module. Only one host uses it
+    # today, but a headless machine would want it off, which is why it stays a
+    # flag rather than being inlined.
     mkHost = {
       modules,
       home ? false,
@@ -72,10 +73,6 @@
       nixos = mkHost {
         modules = [./hosts/nixos];
         home = true;
-      };
-
-      vega = mkHost {
-        modules = [./hosts/vega];
       };
     };
   };

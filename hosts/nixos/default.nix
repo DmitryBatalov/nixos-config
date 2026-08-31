@@ -26,7 +26,9 @@
     proxy = {
       nixDaemon.enable = true;
       remote = {
-        host = "45.151.68.245"; # vega
+        # The box serving the tunnel. It used to be managed from this repo as
+        # the `vega` host; that config is gone, the endpoint is unchanged.
+        host = "45.151.68.245";
         user = "dmitry";
         port = 443;
       };
@@ -60,10 +62,6 @@
   boot.loader.efi.canTouchEfiVariables = true;
 
   networking.hostName = "nixos";
-
-  # Hard-link identical files in the store to save disk. Worth it here because
-  # this machine carries a large store; vega could adopt it with one line.
-  nix.settings.auto-optimise-store = true;
 
   users.users.${username}.description = username;
 

@@ -8,7 +8,12 @@
   # host might reasonably not want lives in a feature module with an enable
   # flag instead.
 
-  nix.settings.experimental-features = ["nix-command" "flakes"];
+  nix.settings = {
+    experimental-features = ["nix-command" "flakes"];
+    # Hard-link identical files in the store to save disk; complements the
+    # weekly GC below.
+    auto-optimise-store = true;
+  };
 
   # mkDefault so a host can dial it back without mkForce.
   nix.gc = {
