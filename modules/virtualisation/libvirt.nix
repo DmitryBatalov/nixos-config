@@ -16,7 +16,13 @@ in {
     # if you use libvirtd on a desktop environment
     programs.virt-manager.enable = true; # can be used to manage non-local hosts as well
 
-    users.users.${username}.extraGroups = ["libvirtd" "kvm" "plugdev"];
+    # No libvirtd: membership in that group is root-equivalent with no password --
+    # polkit grants org.libvirt.unix.manage to it with Result.YES, and a domain
+    # definition can attach any host block device. Domains live in qemu:///session
+    # instead, where they run as the user and need no privileged daemon.
+    # kvm is only /dev/kvm for hardware acceleration; plugdev is USB. Neither
+    # grants anything the user could not already reach.
+    users.users.${username}.extraGroups = ["kvm" "plugdev"];
 
     # A qemu:///session domain runs as the user, so USB passthrough needs the
     # user to own the device node -- libvirtd is not there to open it as root.
