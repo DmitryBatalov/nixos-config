@@ -61,7 +61,17 @@
     };
 
     virtualisation = {
-      docker.enable = true;
+      docker = {
+        # Retired, and the docker group went with it -- that was the whole point:
+        # membership was root-equivalent with no password. Old images and volumes
+        # stay in /var/lib/docker and come back if this is flipped, until that
+        # directory is removed by hand.
+        enable = false;
+
+        # The only daemon now. Containers run as this user in a user namespace,
+        # so "root" inside one is an unprivileged uid outside.
+        rootless = true;
+      };
       libvirt.enable = true;
     };
   };
