@@ -49,7 +49,7 @@
     # identity, whose only power is issuing short-lived tokens to the two
     # accounts named below. The cluster-side manifest lives with the cluster.
     k8s.access = {
-      enable = false; # flip to true once the cluster identities and /etc/k8s exist
+      enable = true;
     };
 
     hardware = {
