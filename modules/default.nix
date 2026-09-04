@@ -15,6 +15,8 @@
     ./desktop/fonts.nix
     ./desktop/sway.nix
 
+    ./k8s/access.nix
+
     ./hardware/bluetooth.nix
     ./hardware/fido2.nix
     ./hardware/keyboard.nix

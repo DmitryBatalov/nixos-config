@@ -44,6 +44,14 @@
       fonts.enable = true;
     };
 
+    # Privileged cluster access gated on the hardware token. What gets
+    # encrypted is not an admin kubeconfig but that of a narrow minter
+    # identity, whose only power is issuing short-lived tokens to the two
+    # accounts named below. The cluster-side manifest lives with the cluster.
+    k8s.access = {
+      enable = false; # flip to true once the cluster identities and /etc/k8s exist
+    };
+
     hardware = {
       bluetooth.enable = true;
       fido2.enable = true;
