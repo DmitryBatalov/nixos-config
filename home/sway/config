@@ -74,7 +74,6 @@ bindsym $mod+Shift+8    move container to workspace  $ws8
 bindsym $mod+Shift+9    move container to workspace  $ws9
 bindsym $mod+Shift+0    move container to workspace  $ws10
 
-
 # resize window (you can also use the mouse for that)
 mode "resize" {
         bindsym j resize shrink width 10 px or 10 ppt
@@ -205,11 +204,9 @@ bindsym $mod+o exec obsidian
 # Power Profiles menu switcher (rofi)
 bindsym $mod+Shift+p exec ~/.config/sway/scripts/power-profiles
 
-
 ##########################################
 # configuration for workspace behaviour: #
 ##########################################
-
 
 # bind program to workspace and focus to them on startup:
 # class matchers for XWayland apps
@@ -227,6 +224,12 @@ assign [app_id="firefox"] $ws2
 assign [app_id="chromium"] $ws2
 assign [app_id="org.telegram.desktop"] $ws5
 assign [app_id="obsidian"] $ws8
+
+# The break-glass terminal gets a workspace of its own. Everything else that
+# marks it -- the background, the status bar -- is painted by tmux inside the
+# session, so the signal belongs to the session rather than to this config and
+# cannot outlive it.
+assign [app_id="k8s-breakglass"] $ws10
 
 # automatic set focus new window if it opens on another workspace:
 for_window [class=Terminal] focus
@@ -306,6 +309,7 @@ client.urgent		    	$urgentred	$urgentred	$white		$yellowbrown	$yellowbrown
 
 exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=sway PATH
 exec waybar
+
 exec swaykbdd
 exec wl-clip-persist --clipboard regular
 exec flameshot
