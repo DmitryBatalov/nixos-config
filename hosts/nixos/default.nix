@@ -50,6 +50,16 @@
     # accounts named below. The cluster-side manifest lives with the cluster.
     k8s.access = {
       enable = true;
+
+      # Adds the admin's own profile so `sudo nvim` and friends keep resolving.
+      # Root-owned store path behind a symlink in /etc, so the user cannot
+      # rewrite it. Its twin ~/.nix-profile/bin is a symlink in $HOME and must
+      # never appear here.
+      sudoSecurePath = [
+        "/run/wrappers/bin"
+        "/etc/profiles/per-user/dmitry/bin"
+        "/run/current-system/sw/bin"
+      ];
     };
 
     hardware = {

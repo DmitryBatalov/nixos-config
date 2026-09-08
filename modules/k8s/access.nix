@@ -110,12 +110,17 @@ in {
         A kubeconfig for the minting ServiceAccount, age-encrypted to a FIDO2
         credential on a hardware token.
 
-        Not an admin credential, and named so it cannot be mistaken for one. The
-        account it authenticates may create tokens for the two ServiceAccounts
-        below and nothing else: it cannot read a Secret, list a Pod, or mint for
-        itself. Possession of this file plus the token therefore buys no access
-        on its own -- reaching cluster-admin means minting a break-glass token,
-        which the apiserver records.
+        The account it authenticates holds one verb: create a token for the two
+        ServiceAccounts below. It cannot read a Secret, list a Pod, create a
+        binding, or mint for itself.
+
+        Do not read that as "this file is harmless". One of the two accounts is
+        cluster-admin, so whoever holds the *decrypted* contents is cluster-admin
+        one API call away. What the indirection buys is that the call is recorded
+        by the apiserver instead of being a silent read of a stored admin token,
+        and that getting there costs a PIN and a touch -- factors a process
+        running as the user cannot supply. The file alone, without the token, is
+        inert. Treat it as a locked admin credential, not a low-value one.
 
         Which cluster is reached comes from this kubeconfig's own
         current-context, since the wrapper renders the session with --minify.
@@ -244,6 +249,28 @@ in {
       '';
     };
 
+    sudoSecurePath = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = ["/run/wrappers/bin" "/run/current-system/sw/bin"];
+      description = ''
+        The PATH sudo resolves command names through, replacing the caller's.
+        Without it, a process running as the invoking user can prepend a
+        directory of its own and own the name `k8s`; the operator then
+        authenticates that program into root while believing they ran this one.
+
+        Every entry must be one the invoking user cannot rewrite -- including the
+        symlinks along the way, not just the final directory. The default is the
+        conservative pair. On a machine where the admin's own tools live in a
+        per-user profile, adding `/etc/profiles/per-user/<user>/bin` is safe and
+        keeps `sudo <tool>` working: that path is a root-owned store directory
+        reached through a symlink in /etc. Its near-twin `~/.nix-profile/bin` is
+        not safe and must never be added -- that symlink lives in $HOME.
+
+        This applies to every sudo call on the machine, not only to this wrapper,
+        and it also becomes the PATH inside the command sudo runs.
+      '';
+    };
+
     ttl = lib.mkOption {
       type = duration;
       default = "15m";
@@ -316,6 +343,28 @@ in {
         "z ${cfg.identityFile} 0400 root root -"
       ];
 
+    # Without secure_path, sudo resolves a bare command name through the
+    # *caller's* PATH. Anything running as that user can prepend a directory of
+    # its own -- one line in ~/.bashrc -- and own the name `k8s`. The operator
+    # then types the command they meant, sees the PIN and touch prompt they
+    # expected, and authenticates a different program into root. The hardware
+    # factor is not forged in that attack, it is redirected.
+    #
+    # The list is every PATH entry on this machine that the user cannot rewrite.
+    # `/etc/profiles/per-user/<user>/bin` is included deliberately: it is a
+    # root-owned store path whose symlink lives in /etc, so home-manager can only
+    # change it through a root activation, and leaving it out would break `sudo`
+    # for the ~100 programs that exist only there. Its near-twin
+    # `~/.nix-profile/bin` is excluded for the opposite reason -- that symlink
+    # sits in $HOME, where a process running as the user repoints it at will.
+    # Do not "complete" this list with it.
+    #
+    # This closes the file-planting route for every sudo call on the machine. It
+    # does not close a shell alias or function: `alias sudo='sudo '` makes bash
+    # expand the next word too, and that happens before sudo exists. The answer
+    # to that one is to start privileged work from the session picker rather than
+    # by typing into a shell whose rc files the agent can write.
+    #
     # A cached sudo ticket would let anything running as the user call the
     # wrapper without a PIN for the next 15 minutes, leaving only the touch --
     # exactly the factor an unattended process can sit and wait for. Both paths
@@ -323,6 +372,8 @@ in {
     # path is reachable directly. This is defence in depth: the hardware gate is
     # what actually holds, since age demands PIN and touch either way.
     security.sudo.extraConfig = ''
+      Defaults secure_path="${lib.concatStringsSep ":" cfg.sudoSecurePath}"
+
       Cmnd_Alias K8S_ACCESS = /run/current-system/sw/bin/k8s, /nix/store/*/bin/k8s
       Defaults!K8S_ACCESS timestamp_timeout=0
       Defaults!K8S_ACCESS env_keep += "TMUX TMUX_PANE"
