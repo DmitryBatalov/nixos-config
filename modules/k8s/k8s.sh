@@ -53,8 +53,12 @@ SA_BG=${K8S_SA_BREAKGLASS:-breakglass}
 TTL=${K8S_TTL:-15m}
 SESSION_TTL=${K8S_SESSION_TTL:-8h}
 SESSION_FILE=${K8S_SESSION_FILE:-.kube/k8s-session}
-RUN_PATH=${K8S_RUN_PATH:-$PATH}
-SHELL_PATH=${K8S_SHELL_PATH:-$PATH}
+# `${VAR-default}` rather than `${VAR:-default}`: an *empty* value is a
+# deliberate "nothing may run", and the colon form would silently replace it
+# with the wrapper's own PATH -- turning allowedTools = [] into the widest
+# setting there is instead of the narrowest.
+RUN_PATH=${K8S_RUN_PATH-$PATH}
+SHELL_PATH=${K8S_SHELL_PATH-$PATH}
 OPS_USER=${K8S_OPS_USER:-k8s-ops}
 SHELL_TTL=${K8S_SHELL_TTL:-1h}
 K9S_SKIN=${K8S_K9S_SKIN:-}
@@ -233,6 +237,13 @@ session_config="$target_home/$SESSION_FILE"
 # ---------------------------------------------------------------- logout ----
 # No privileges needed: it removes a file the user owns.
 if [ "$mode" = logout ]; then
+  # `head` and `rm` below both follow symlinks, and the path they follow lives
+  # in $HOME -- attacker-controlled in this threat model. `login` was hardened
+  # against exactly this by writing through `sudo -u`; logout has to drop the
+  # same way, or a symlink turns root's `rm` into someone else's choice of file.
+  if [ "$(id -u)" -eq 0 ]; then
+    exec sudo -u "$target_user" "$0" logout
+  fi
   [ -e "$session_config" ] || die "no session" 0
   written_by_us "$session_config" \
     || die "$session_config was not written by this tool, refusing to delete it"
@@ -246,14 +257,33 @@ if [ "$(id -u)" -ne 0 ]; then
   die "must be run through sudo"
 fi
 
-# Run mode's PATH is the boundary, not a list of names compared against it: the
-# tool is looked up in exactly the set the module says may be run as root. A
-# typo, or a program that merely happens to be installed, is simply not there.
-if [ "$mode" = run ] && ! (
-  PATH=$RUN_PATH
-  command -v "$tool"
-) > /dev/null 2>&1; then
-  die "$tool is not one of the tools this wrapper may run ($RUN_PATH)" 2
+# Run mode's PATH is the boundary, and two lookups do not respect it.
+#
+# `command -v` resolves a name containing a slash without consulting PATH at
+# all, so `k8s --breakglass ./script` would run an arbitrary file as root with a
+# live token. And it reports success for shell builtins with any PATH, so
+# `k8s --breakglass exec /bin/bash` would run the builtin and hand out a root
+# shell. `type -P` refuses builtins -- it returns only an executable file found
+# in PATH -- but it still resolves a slashed path, so the slash is rejected
+# separately. The resolved absolute path is what gets executed, so there is no
+# second lookup to disagree with the first.
+if [ "$mode" = run ]; then
+  # An empty PATH is read as the current directory by some shells, so this must
+  # refuse rather than fall through to a lookup.
+  [ -n "$RUN_PATH" ] \
+    || die "no tools are allowed to run: allowedTools is empty" 2
+
+  case $tool in
+    */*) die "give a tool name, not a path: $tool" 2 ;;
+  esac
+  # shellcheck disable=SC2030  # the subshell is the point: the narrow PATH must
+  # not leak back into the wrapper, which still needs chmod and mktemp below.
+  tool_path=$(
+    PATH=$RUN_PATH
+    type -P -- "$tool" || true
+  )
+  [ -n "$tool_path" ] \
+    || die "$tool is not one of the tools this wrapper may run ($RUN_PATH)" 2
 fi
 
 case $profile in
@@ -297,8 +327,27 @@ umask 077
 work=$(mktemp -d "$runtime_dir/k8s-wrapper.XXXXXXXX")
 chmod 700 "$work"
 export HOME="$work" # keep every tool's cache, plugins and config out of /root
-trap 'rm -rf "$work"' EXIT
-trap 'exit 130' HUP INT TERM # a signal trap alone would resume, not stop
+# The tmux server is torn down here rather than after the client returns, so it
+# happens on a signal too. Ctrl-\ sends SIGQUIT, and bash dies on an untrapped
+# fatal signal *without* running the EXIT trap -- which used to leave a detached
+# ops server holding a live token for the rest of its TTL.
+cleanup() {
+  if [ -n "${sess:-}" ] && [ -S "$sess/tmux.sock" ]; then
+    # shellcheck disable=SC2031  # the wrapper's own PATH, untouched here: the
+    # narrowing in run mode happens in a subshell and after this is registered.
+    sudo -u "$OPS_USER" env -i PATH="$PATH" \
+      tmux -S "$sess/tmux.sock" kill-server > /dev/null 2>&1 || true
+  fi
+  rm -rf "$work"
+}
+trap cleanup EXIT
+
+# One handler per signal, so the exit status still names which arrived. A trap
+# that merely returns would resume the script instead of stopping it.
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 131' QUIT
+trap 'exit 143' TERM
 
 # Decrypt into memory, never onto disk. age-plugin-fido2-hmac writes its PIN
 # prompt to /dev/tty, so command substitution -- which captures only stdout --
@@ -498,7 +547,6 @@ if [ "$mode" = shell ]; then
     # -S puts the socket inside the session directory, so it dies with it and no
     # detached server can outlive the token.
     run_as_ops tmux -f "$sess/tmux.conf" -S "$sess/tmux.sock" new-session -A -s k8s || true
-    run_as_ops tmux -S "$sess/tmux.sock" kill-server > /dev/null 2>&1 || true
   else
     run_as_ops bash --rcfile "$sess/.bashrc" -i || true
   fi
@@ -516,8 +564,12 @@ export KUBECONFIG="$work/config"
 printf 'k8s: %s as system:serviceaccount:%s:%s (expires %s)\n' \
   "$tool" "$SA_NS" "$SA" "$expires" >&2
 
-# The narrow PATH is applied here, at the last moment: everything above still
-# needed chmod and the rest. set -e propagates the tool's exact exit status,
-# and the EXIT trap still runs because this is not an exec.
-PATH=$RUN_PATH
-"$tool" "$@"
+# The resolved absolute path is executed, so nothing is looked up a second
+# time. set -e propagates the tool's exact exit status, and the EXIT trap
+# still runs because this is not an exec.
+# The child still gets the narrow PATH: a tool that spawns helpers -- kubectl
+# credential plugins, helm's post-renderer -- must not reach past the set.
+# shellcheck disable=SC2031  # deliberately the same value as the lookup used.
+export PATH=$RUN_PATH
+
+"$tool_path" "$@"
