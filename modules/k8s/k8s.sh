@@ -51,6 +51,8 @@ SA_NS=${K8S_SA_NAMESPACE:-team-access}
 SA_RO=${K8S_SA_RO:-ops-ro}
 SA_BG=${K8S_SA_BREAKGLASS:-breakglass}
 TTL=${K8S_TTL:-15m}
+MAX_TTL_SECONDS=${K8S_MAX_TTL_SECONDS:-86400}
+TERMINALS=${K8S_TERMINALS:-*kitty* *foot* *alacritty* *wezterm* *ghostty* xterm* st}
 SESSION_TTL=${K8S_SESSION_TTL:-8h}
 SESSION_FILE=${K8S_SESSION_FILE:-.kube/k8s-session}
 # `${VAR-default}` rather than `${VAR:-default}`: an *empty* value is a
@@ -114,6 +116,64 @@ written_by_us() { head -1 "$1" 2> /dev/null | grep -qF 'k8s-session'; }
 die() {
   printf 'k8s: %s\n' "$1" >&2
   exit "${2:-1}"
+}
+
+# Which process holds the master end of our controlling terminal. That is part
+# of the wiring rather than something a program claims about itself: a terminal
+# multiplexer necessarily holds the master of every pane it draws, and no shell
+# profile can change that. The previous check read $TMUX, which `unset TMUX` in
+# an attacker-writable ~/.bashrc removed -- the guard the whole session design
+# rests on, defeated by one line.
+#
+# Printed rather than returned, so the caller can name the offender.
+# Which process holds the master end of our controlling terminal, if it is not
+# one of the terminal emulators this machine trusts.
+#
+# That ownership is part of the wiring rather than something a program claims
+# about itself: whoever holds the master types into the terminal, and no shell
+# profile can change who that is. The check this replaces read $TMUX, which one
+# line of `unset TMUX` in an attacker-writable ~/.bashrc removed -- and $TMUX was
+# the only thing standing between a privileged session and a pane that anything
+# with the user's uid could send-keys into.
+#
+# An allowlist rather than a list of multiplexers, because the danger is not
+# tmux specifically. Measured on this machine: the coding agent itself holds the
+# master of four ptys. A session opened on one of those would be typed into
+# directly, no send-keys needed. Anything not recognised as a terminal the human
+# is sitting at is therefore refused, and the caller is told what it saw.
+terminal_holder() {
+  local tty index proc fd target idx holder owner user pattern
+  local -a patterns
+  user=${SUDO_USER:-$(id -un)}
+  tty=$(readlink /proc/self/fd/0 2> /dev/null) || return 0
+  case $tty in
+    /dev/pts/*) index=${tty#/dev/pts/} ;;
+    *) return 0 ;;
+  esac
+  for proc in /proc/[0-9]*; do
+    [ -r "$proc/fd" ] || continue
+    for fd in "$proc"/fd/*; do
+      target=$(readlink "$fd" 2> /dev/null) || continue
+      [ "$target" = /dev/ptmx ] || continue
+      idx=$(sed -n 's/^tty-index:[[:space:]]*//p' "$proc/fdinfo/${fd##*/}" 2> /dev/null)
+      [ "$idx" = "$index" ] || continue
+      holder=$(cat "$proc/comm" 2> /dev/null) || continue
+      owner=$(stat -c %U "$proc" 2> /dev/null) || continue
+      # A master held by another user is not something this uid can drive.
+      [ "$owner" = "$user" ] || return 0
+      # read -ra splits on whitespace without pathname expansion; a bare
+      # `for pattern in $TERMINALS` would try to match *kitty* against files.
+      read -r -a patterns <<< "$TERMINALS"
+      for pattern in "${patterns[@]}"; do
+        # shellcheck disable=SC2254  # the patterns are globs on purpose
+        case $holder in
+          $pattern) return 0 ;;
+        esac
+      done
+      printf '%s' "$holder"
+      return 0
+    done
+  done
 }
 
 # ------------------------------------------------------------- arguments ----
@@ -210,6 +270,13 @@ esac
 if [ "$ttl_seconds" -lt 600 ]; then
   die "duration must be at least 10m -- the apiserver rejects anything shorter" 2
 fi
+# And a ceiling. There was only a floor, so `k8s login --ttl 8760h` minted a
+# year-long token into a file the agent reads by design. Whether the cluster
+# honours it depends on --service-account-max-token-expiration, which the
+# wrapper cannot see, so refusing here does not depend on the cluster's setting.
+if [ "$ttl_seconds" -gt "$MAX_TTL_SECONDS" ]; then
+  die "duration must be at most $((MAX_TTL_SECONDS / 3600))h" 2
+fi
 
 if [ "$mode" = login ] && [ "$profile" != ro ]; then
   die "login mints a read-only session; use 'sudo k8s --breakglass <tool>' to escalate" 2
@@ -218,13 +285,19 @@ fi
 if [ "$mode" = shell ]; then
   [ -t 0 ] || die "shell needs a terminal" 2
   id -u "$OPS_USER" > /dev/null 2>&1 || die "no such account: $OPS_USER"
-  # TMUX survives sudo only because the module adds it to env_keep; without that
-  # this check would silently never fire.
-  if [ -n "${TMUX:-}" ]; then
-    printf 'k8s: refusing to start inside your tmux. That server runs as you and holds\n' >&2
-    printf '     this pane, so anything with your uid can send-keys into the session.\n' >&2
-    printf '     Start it from a plain terminal window. tmux *inside* the session is\n' >&2
-    printf '     fine and is what it runs: that server belongs to %s.\n' "$OPS_USER" >&2
+
+  mux=$(terminal_holder)
+  if [ -n "$mux" ]; then
+    printf 'k8s: this terminal is held by "%s", running as you. Whoever holds a\n' "$mux" >&2
+    printf '     terminal types into it -- that is what holding it means -- so a\n' >&2
+    printf '     privileged session opened here would be drivable by anything with your\n' >&2
+    printf '     uid. For a multiplexer that is an offered command; for anything else it\n' >&2
+    printf '     is simply the wiring.\n' >&2
+    printf '\n' >&2
+    printf '     Start it from a terminal emulator instead -- the ones named in\n' >&2
+    printf '     local.k8s.access.terminals. A multiplexer *inside* the session is fine\n' >&2
+    printf '     and is what it runs: that one belongs to %s, which nothing running as\n' "$OPS_USER" >&2
+    printf '     you can reach.\n' >&2
     exit 2
   fi
 fi
@@ -365,6 +438,13 @@ minted=$(kc create token "$SA" -n "$SA_NS" --duration="$TTL" -o json)
 token=$(printf '%s' "$minted" | jq -r '.status.token')
 expires=$(printf '%s' "$minted" | jq -r '.status.expirationTimestamp')
 
+# The only value interpolated into the generated tmux.conf that is not a
+# build-time constant, and it comes from whatever the kubeconfig points at. A
+# crafted response could close the quoting and append a run-shell directive.
+case $expires in
+  *[!0-9TZ:.+-]* | "") die "the cluster returned an implausible expiry: $expires" ;;
+esac
+
 # One view, four fields. The raw output stays inside the pipe on purpose: it
 # carries the minter credential, which must not reach a shell variable or a
 # herestring's temp file.
@@ -488,17 +568,21 @@ if [ "$mode" = shell ]; then
   # so its skin is per-session too and goes away with it. The transparent skin
   # paints no background of its own, leaving the one tmux just set: the session's
   # colour keeps a single definition instead of two that drift apart.
-  if [ -n "$K9S_SKIN" ] && [ -r "$K9S_SKIN" ]; then
-    mkdir -p "$sess/.config/k9s/skins"
-    cat "$K9S_SKIN" > "$sess/.config/k9s/skins/transparent.yaml"
-    {
-      printf 'k9s:\n'
-      # Not a boundary -- RBAC is -- but a read-only session should not be
-      # offering commands the apiserver will refuse anyway.
-      if [ "$profile" = ro ]; then printf '  readOnly: true\n'; fi
-      printf '  ui:\n    skin: transparent\n'
-    } > "$sess/.config/k9s/config.yaml"
-  fi
+  # The skin and the read-only flag are unrelated, and keeping the flag inside
+  # the skin's condition meant a renamed path in nixpkgs would silently drop it.
+  mkdir -p "$sess/.config/k9s"
+  {
+    printf 'k9s:\n'
+    # Not a boundary -- RBAC is -- but a read-only session should not be
+    # offering commands the apiserver will refuse anyway.
+    if [ "$profile" = ro ]; then printf '  readOnly: true\n'; fi
+    printf '  ui:\n'
+    if [ -n "$K9S_SKIN" ] && [ -r "$K9S_SKIN" ]; then
+      mkdir -p "$sess/.config/k9s/skins"
+      cat "$K9S_SKIN" > "$sess/.config/k9s/skins/transparent.yaml"
+      printf '    skin: transparent\n'
+    fi
+  } > "$sess/.config/k9s/config.yaml"
 
   chown -R "$OPS_USER" "$sess"
   chmod 700 "$sess" "$sess/work"

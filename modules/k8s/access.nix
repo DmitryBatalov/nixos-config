@@ -79,6 +79,7 @@
     K8S_SESSION_FILE = cfg.sessionFile;
     K8S_OPS_USER = cfg.opsUser;
     K8S_SHELL_TTL = cfg.shellTtl;
+    K8S_TERMINALS = lib.concatStringsSep " " cfg.terminals;
     # Only when k9s is actually in shellTools: otherwise this would drag the
     # package into the closure of a wrapper that never runs it.
     K8S_K9S_SKIN =
@@ -271,6 +272,26 @@ in {
       '';
     };
 
+    terminals = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = ["*kitty*" "*foot*" "*alacritty*" "*wezterm*" "*ghostty*" "xterm*" "st"];
+      description = ''
+        Glob patterns matching the `comm` of processes trusted to hold the master
+        end of a terminal `k8s shell` may run in.
+
+        An allowlist, because the danger is not tmux specifically. Whoever holds
+        the master types into the terminal; a multiplexer does it on request from
+        anything with the user's uid, and a process that merely created a pty for
+        its own purposes does it directly. Measured on this machine, the coding
+        agent held the master of four ptys -- a session opened on one of those
+        would need no send-keys at all.
+
+        So anything unrecognised is refused and named. A terminal missing from
+        this list produces a loud, fixable refusal; the opposite default would
+        produce a silent hole.
+      '';
+    };
+
     ttl = lib.mkOption {
       type = duration;
       default = "15m";
@@ -359,6 +380,11 @@ in {
     # sits in $HOME, where a process running as the user repoints it at will.
     # Do not "complete" this list with it.
     #
+    # TMUX used to be kept through env_reset so the wrapper could see it. It no
+    # longer is: reading that variable was the weak check, and the wrapper now asks
+    # the kernel which process holds the master end of its terminal instead. One
+    # fewer attacker-controlled variable reaching a root process.
+    #
     # This closes the file-planting route for every sudo call on the machine. It
     # does not close a shell alias or function: `alias sudo='sudo '` makes bash
     # expand the next word too, and that happens before sudo exists. The answer
@@ -376,7 +402,6 @@ in {
 
       Cmnd_Alias K8S_ACCESS = /run/current-system/sw/bin/k8s, /nix/store/*/bin/k8s
       Defaults!K8S_ACCESS timestamp_timeout=0
-      Defaults!K8S_ACCESS env_keep += "TMUX TMUX_PANE"
     '';
   };
 }
