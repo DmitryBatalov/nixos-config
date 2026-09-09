@@ -50,6 +50,9 @@
     # accounts named below. The cluster-side manifest lives with the cluster.
     k8s.access = {
       enable = true;
+      # The namespace and the two account names are NOT here: they name a
+      # cluster-admin account on a real cluster, and this repository is public.
+      # They live in /etc/k8s/accounts, root-owned, beside the credential.
 
       # Adds the admin's own profile so `sudo nvim` and friends keep resolving.
       # Root-owned store path behind a symlink in /etc, so the user cannot

@@ -71,6 +71,7 @@
     K8S_SHELL_PATH = shellPath;
     K8S_MINTER_AGE = cfg.cipherFile;
     K8S_AGE_IDENTITY = cfg.identityFile;
+    K8S_ACCOUNTS_FILE = cfg.accountsFile;
     K8S_SA_NAMESPACE = cfg.serviceAccountNamespace;
     K8S_SA_RO = cfg.readOnlyServiceAccount;
     K8S_SA_BREAKGLASS = cfg.breakGlassServiceAccount;
@@ -142,6 +143,31 @@ in {
         required: the credential is non-resident, so the token itself stores
         nothing and cannot decrypt without this file. Back it up wherever the
         token's replacement plan lives.
+      '';
+    };
+
+    accountsFile = lib.mkOption {
+      type = lib.types.str;
+      default = "/etc/k8s/accounts";
+      description = ''
+        Optional file naming the namespace and the two ServiceAccounts, read at
+        run time and overriding the three options below.
+
+        It exists because those names are deployment state, not configuration:
+        they say which namespace on which cluster holds an account with full
+        rights. This repository is public, and naming a cluster-admin account in
+        it is free reconnaissance for anyone who later reaches the apiserver --
+        which, until the network allowlist exists, is anyone. The same reasoning
+        keeps the credential and the manifests out of here.
+
+        Three lines, `key = value`, root-owned and 0400 like its neighbours:
+
+          namespace  = team-access
+          readonly   = ops-ro
+          breakglass = breakglass
+
+        Absent or unreadable, the options below apply unchanged, so a machine
+        that has nothing to hide can keep declaring them in the open.
       '';
     };
 
@@ -358,10 +384,11 @@ in {
 
     systemd.tmpfiles.rules =
       map (d: "d ${d} 0700 root root -")
-      (lib.unique [(dirOf cfg.cipherFile) (dirOf cfg.identityFile)])
+      (lib.unique [(dirOf cfg.cipherFile) (dirOf cfg.identityFile) (dirOf cfg.accountsFile)])
       ++ [
         "z ${cfg.cipherFile} 0400 root root -"
         "z ${cfg.identityFile} 0400 root root -"
+        "z ${cfg.accountsFile} 0400 root root -"
       ];
 
     # Without secure_path, sudo resolves a bare command name through the

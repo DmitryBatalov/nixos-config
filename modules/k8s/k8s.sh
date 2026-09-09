@@ -50,6 +50,7 @@ IDENTITY=${K8S_AGE_IDENTITY:-/etc/k8s/identity.txt}
 SA_NS=${K8S_SA_NAMESPACE:-team-access}
 SA_RO=${K8S_SA_RO:-ops-ro}
 SA_BG=${K8S_SA_BREAKGLASS:-breakglass}
+
 TTL=${K8S_TTL:-15m}
 MAX_TTL_SECONDS=${K8S_MAX_TTL_SECONDS:-86400}
 TERMINALS=${K8S_TERMINALS:-*kitty* *foot* *alacritty* *wezterm* *ghostty* xterm* st}
@@ -117,6 +118,48 @@ die() {
   printf 'k8s: %s\n' "$1" >&2
   exit "${2:-1}"
 }
+
+ACCOUNTS_FILE=${K8S_ACCOUNTS_FILE:-/etc/k8s/accounts}
+
+# The namespace and the two account names are deployment state, not
+# configuration: they say which namespace on which cluster holds an account with
+# full rights. The module that carries this script is public, so they live
+# beside the credential instead -- root-owned, and absent from any repository.
+# Without the file the build-time defaults apply unchanged.
+#
+# Parsed, not sourced. The file belongs to root, but these values are
+# interpolated into kubectl's argv and into a generated kubeconfig, so they are
+# read as data and then checked, rather than executed and trusted.
+if [ -r "$ACCOUNTS_FILE" ]; then
+  while IFS= read -r line || [ -n "$line" ]; do
+    case $line in
+      '#'* | '') continue ;;
+    esac
+    key=${line%%=*}
+    val=${line#*=}
+    key=${key//[[:space:]]/}
+    val=${val//[[:space:]]/}
+    case $key in
+      namespace) SA_NS=$val ;;
+      readonly) SA_RO=$val ;;
+      breakglass) SA_BG=$val ;;
+      *) die "$ACCOUNTS_FILE: unknown key '$key'" ;;
+    esac
+  done < "$ACCOUNTS_FILE"
+fi
+
+# Checked whether they came from the file or from the module. A namespace is a
+# DNS-1123 label, a ServiceAccount name a subdomain, so the latter may contain
+# dots and the former may not. Both are interpolated into a kubeconfig below,
+# and a name carrying a quote or a newline would break out of it.
+case $SA_NS in
+  *[!a-z0-9-]* | -* | *- | "") die "not a valid namespace: $SA_NS" ;;
+esac
+for sa in "$SA_RO" "$SA_BG"; do
+  case $sa in
+    *[!a-z0-9.-]* | [-.]* | *[-.] | "") die "not a valid ServiceAccount name: $sa" ;;
+  esac
+done
 
 # Which process holds the master end of our controlling terminal. That is part
 # of the wiring rather than something a program claims about itself: a terminal
