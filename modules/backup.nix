@@ -35,7 +35,10 @@ in {
       # restic has no Yandex backend of its own; rclone's talks to the Disk REST
       # API. The restic package already carries rclone on its PATH.
       repository = "rclone:yandex:restic/${config.networking.hostName}";
-      initialize = true;
+      # No `initialize`: the repository is created once by hand, with
+      # `restic-yandex init`. With it, a repository deleted from the Disk is
+      # silently replaced by an empty one on the next run -- the backup reports
+      # success, the history is gone, and the recovery key opens nothing.
 
       # Without this password the repository is noise. It must also live
       # somewhere that is not this disk, or a dead disk takes the backup with it.
