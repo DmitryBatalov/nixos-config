@@ -21,6 +21,7 @@ in {
         waybar
         rofi
         dunst
+        libnotify # notify-send, which the brightness keys in sway/config call
         wl-clipboard
         wl-clip-persist
         grim # flameshot's Wayland capture backend (useGrimAdapter=true)

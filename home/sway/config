@@ -127,8 +127,9 @@ bindsym $mod+Shift+r reload
 bindsym F1 exec ~/.config/sway/scripts/keyhint-2
 
 # Backlight control
-bindsym XF86MonBrightnessUp exec brightnessctl set +10% && notify-send "Brightness - $(brightnessctl -m | cut -d, -f4)"
-bindsym XF86MonBrightnessDown exec brightnessctl set 10%- && notify-send "Brightness - $(brightnessctl -m | cut -d, -f4)"
+# The stack tag makes each notification replace the last instead of piling up.
+bindsym XF86MonBrightnessUp exec brightnessctl set +10% && notify-send -h string:x-dunst-stack-tag:brightness "Brightness - $(brightnessctl -m | cut -d, -f4)"
+bindsym XF86MonBrightnessDown exec brightnessctl set 10%- && notify-send -h string:x-dunst-stack-tag:brightness "Brightness - $(brightnessctl -m | cut -d, -f4)"
 
 # change focus
 bindsym $mod+j focus left
