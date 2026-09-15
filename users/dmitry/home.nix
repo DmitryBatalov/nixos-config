@@ -18,6 +18,7 @@
     ../../home/programs/shell.nix
     ../../home/programs/ssh.nix
 
+    ../../home/services/backup-notify.nix
     ../../home/services/ssh-tunnel.nix
   ];
 }

@@ -19,6 +19,7 @@ window#waybar {
 #temperature,
 #custom-network,
 #custom-ssh-tunnel,
+#custom-backup,
 #pulseaudio,
 #custom-keyboard,
 #custom-ppd-menu,
@@ -103,6 +104,18 @@ window#waybar {
 }
 
 #custom-ssh-tunnel.disconnected {
+    color: #ff0000;
+}
+
+#custom-backup.running {
+    color: #5294e2;
+}
+
+#custom-backup.stale {
+    color: #fffc00;
+}
+
+#custom-backup.failed {
     color: #ff0000;
 }
 

@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Backup status for waybar. Hidden while the last backup succeeded within two
+# days. Unlike the failure notification it stays on the bar across reboots, and
+# it also catches a backup that hangs or silently never runs.
+#
+# Reads what restic-backups-yandex records as root (modules/backup.nix), so
+# nothing running as this user can make it look healthy.
+
+unit=restic-backups-yandex
+state=/var/lib/$unit
+max_age=$((2 * 24 * 3600))
+
+hidden() { echo '{"text":""}'; exit 0; }
+show() { jq -nc --arg text "$1" --arg class "$2" --arg tooltip "$3" '{$text, $class, $tooltip}'; }
+
+# No backup job on this machine: nothing to report.
+systemctl cat "$unit" >/dev/null 2>&1 || hidden
+
+outcome=$(cat "$state/last-result" 2>/dev/null)
+success=$(stat -c %Y "$state/last-success" 2>/dev/null)
+since=never
+[ -n "$success" ] && since=$(date -d "@$success" '+%a %d %b %H:%M')
+
+if [ "$(systemctl is-active "$unit")" = activating ]; then
+    show "󰅧" running "Backup running. Last success: $since"
+elif [ -n "$outcome" ] && [ "$outcome" != success ]; then
+    show "󰧠 backup" failed "Last backup failed: $outcome. Last success: $since
+journalctl -u $unit"
+elif [ -z "$success" ] || [ $(($(date +%s) - success)) -gt "$max_age" ]; then
+    show "󰅤 backup" stale "No successful backup in two days. Last success: $since"
+else
+    hidden
+fi

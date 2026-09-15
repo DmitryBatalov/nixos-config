@@ -94,6 +94,18 @@ in {
       # first upload would say nothing in the journal until it ended. One line a
       # minute.
       progressFps = 1.0 / 60;
+
+      # The outcome of every run, for the desktop session to pick up
+      # (home/services/backup-notify.nix, the waybar module). Readable by all,
+      # written by root, so nothing running as the user can forge a success.
+      # Runs as ExecStopPost, after failures too. For a oneshot, a run cut short
+      # by `systemctl stop` or a shutdown ends as `signal`, not `success`.
+      backupCleanupCommand = ''
+        if [ "$SERVICE_RESULT" = success ]; then
+          touch "$STATE_DIRECTORY/last-success"
+        fi
+        echo "$SERVICE_RESULT" > "$STATE_DIRECTORY/last-result"
+      '';
     };
 
     systemd.tmpfiles.rules = [
@@ -110,6 +122,10 @@ in {
     systemd.services.restic-backups-yandex.serviceConfig = {
       Nice = 19;
       IOSchedulingClass = "idle";
+
+      # /var/lib/restic-backups-yandex, 0755: where the outcome above is written.
+      # Separate from secretsDir, which must stay unreadable to the user.
+      StateDirectory = "restic-backups-yandex";
     };
   };
 }

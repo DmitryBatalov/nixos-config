@@ -12,6 +12,7 @@
         "temperature",
         "custom/network",
         "custom/ssh-tunnel",
+        "custom/backup",
         "pulseaudio",
         "custom/keyboard",
         "battery",
@@ -76,6 +77,12 @@
         "on-click": "$HOME/.config/sway/scripts/ssh-tunnel-toggle",
         "return-type": "json",
         "interval": 5
+    },
+
+    "custom/backup": {
+        "exec": "$HOME/.config/sway/scripts/backup-waybar",
+        "return-type": "json",
+        "interval": 60
     },
 
     "pulseaudio": {
