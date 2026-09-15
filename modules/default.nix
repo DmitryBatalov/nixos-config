@@ -5,6 +5,7 @@
   imports = [
     ./core.nix
 
+    ./backup.nix
     ./certs.nix
     ./networking.nix
     ./overlays.nix
