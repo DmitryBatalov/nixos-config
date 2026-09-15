@@ -9,6 +9,11 @@
   # ============================= What this machine is =============================
 
   local = {
+    # Daily restic snapshot of $HOME to Yandex Disk. The password, the rclone
+    # token and any extra excludes live in /var/lib/restic, outside this
+    # repository -- see modules/backup.nix.
+    backup.enable = true;
+
     certs.russianTrusted.enable = true;
     overlays.unstable.enable = true;
 
