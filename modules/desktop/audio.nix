@@ -25,12 +25,13 @@ in {
         alsa.support32Bit = true;
         pulse.enable = true;
 
-        extraConfig.pipewire."92-low-latency" = {
-          context.properties = {
-            default.clock.rate = 48000;
-            default.clock.quantum = 32;
-          };
-        };
+        # No quantum override here. There used to be one asking for 32 frames,
+        # and it never took effect: written as nested Nix attributes it became
+        # nested JSON, while PipeWire wants the flat key "default.clock.quantum".
+        # The graph ran at the upstream default of 1024 the whole time. Quoting
+        # the keys would have "fixed" it into a graph that wakes up every 0.67 ms
+        # -- which is the opposite of what Bluetooth headsets need, and nothing
+        # here asks for low latency.
 
         wireplumber.extraConfig = {
           # Boost Bluetooth sink priority so it's always preferred
