@@ -93,6 +93,21 @@ in {
         "--keep-monthly 12"
       ];
 
+      # Verify a little every night rather than everything once a year. Setting
+      # checkOpts is what turns the check on at all (runCheck defaults to
+      # whether this list is empty).
+      #
+      # `--read-data` would re-download the whole repository, so instead each run
+      # takes a couple of percent of the packs and actually reads them: the whole
+      # repository is covered in about two months, and silent corruption at the
+      # far end surfaces on its own instead of waiting for a restore. A failure
+      # here fails the service, which is what the notification and the waybar
+      # indicator already watch.
+      checkOpts = [
+        "--with-cache" # reuse the cached metadata instead of fetching it again
+        "--read-data-subset=2%"
+      ];
+
       # Without a terminal restic reports no progress at all, so a multi-hour
       # first upload would say nothing in the journal until it ended. One line a
       # minute.
