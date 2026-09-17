@@ -181,14 +181,17 @@
       vim.fn.writefile({ vim.json.encode(state) }, fsharp_state_file)
     end
 
+    -- Works for both solution formats, because both quote the project paths:
+    -- `Project(...) = "Foo", "src\Foo\Foo.fsproj", ...` in .sln, and
+    -- `<Project Path="src/Foo/Foo.fsproj" />` in .slnx. gmatch rather than
+    -- match: .slnx is XML and may put several projects on one line.
     local function fsharp_parse_sln(sln_path)
       local sln_dir = vim.fn.fnamemodify(sln_path, ':h')
       local projects = {}
       local f = io.open(sln_path, 'r')
       if not f then return projects end
       for line in f:lines() do
-        local rel = line:match('"([^"]+%.[fc]sproj)"')
-        if rel then
+        for rel in line:gmatch('"([^"]+%.[fc]sproj)"') do
           rel = rel:gsub('\\', '/')
           table.insert(projects, vim.fs.normalize(sln_dir .. '/' .. rel))
         end
@@ -235,8 +238,9 @@
 
     local function fsharp_pick_solution(client, bufnr, on_pick)
       local slns = vim.fn.glob(client.config.root_dir .. '/*.sln', false, true)
+      vim.list_extend(slns, vim.fn.glob(client.config.root_dir .. '/*.slnx', false, true))
       if #slns == 0 then
-        fidget_notify('No .sln files in ' .. client.config.root_dir, vim.log.levels.WARN)
+        fidget_notify('No .sln or .slnx files in ' .. client.config.root_dir, vim.log.levels.WARN)
         return
       end
       if #slns == 1 then on_pick(slns[1]); return end
