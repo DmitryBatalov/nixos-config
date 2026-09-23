@@ -10,7 +10,12 @@
     pkgs.unstable.telegram-desktop
     pkgs.libreoffice-qt6-fresh
     pkgs.freecad
-    pkgs.bambu-studio
+    # bambu-studio: out since 2026-09-23. Its meta.license pairs AGPL-3.0 with an
+    # unfree component, so meta.unfree is true and Hydra never builds it -- the
+    # path is not in the binary cache on any channel, and every dependency bump
+    # means compiling it again locally. This update's rebuild (same version,
+    # 02.05.00.67, new store path) ran the machine out of memory twice. Re-add it
+    # with a pinned nixpkgs, the way rider is pinned, or build it by hand once.
     pkgs.obsidian
     pkgs.vlc
     pkgs.evince
