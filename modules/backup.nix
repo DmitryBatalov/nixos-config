@@ -75,16 +75,35 @@ in {
         "${home}/.config/*/Cache" # Electron apps
         "${home}/.config/*/Code Cache"
         "${home}/.config/*/GPUCache"
+        "${home}/.config/*/*/Service Worker" # per-profile CacheStorage
+        "${home}/.mozilla/firefox/*/storage" # site storage, refetched on demand
         "${home}/Downloads"
 
         # Build output, at any depth. Not a bare `bin`: that would take
         # ~/.local/bin and every hand-written script directory with it. Nor
         # `packages`: restored NuGet in a Paket repository, source in a JS
         # monorepo.
+        #
+        # The configuration is not always called Debug or Release -- a solution
+        # is free to name its own, and those were being backed up in full. So
+        # match the framework directory as well, which .NET always creates and
+        # nothing hand-written is named after; `**` also reaches the deeper
+        # bin/<configuration>/Debug/net10.0 layout.
         "node_modules"
+        "fable_modules"
         "obj"
-        "bin/Debug"
+        "bin/Debug" # netcoreapp*, and anything dropped beside the framework dir
         "bin/Release"
+        "bin/**/net[0-9]*"
+        "bin/**/netstandard[0-9]*"
+
+        # Agent working state. The scratch directory fills up with logs and
+        # dumps pulled out of running systems, and a worktree is a checkout the
+        # repository's own .git -- which is backed up -- can produce again, so
+        # only uncommitted changes in one would be lost.
+        ".claude/jobs/*/tmp"
+        ".claude/worktrees"
+        ".claude/file-history"
       ];
 
       pruneOpts = [
