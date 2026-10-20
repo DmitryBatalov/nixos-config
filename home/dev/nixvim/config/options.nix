@@ -48,6 +48,12 @@
     # Save undo history
     undofile = true;
 
+    # Fold by syntax tree, for every language with a treesitter grammar.
+    # Files open fully expanded; fold on demand (za, zM, zR).
+    foldmethod = "expr";
+    foldexpr = "v:lua.vim.treesitter.foldexpr()";
+    foldlevelstart = 99;
+
     # Russian keyboard layout support for normal mode commands
     langmap = "ФИСВУАПРШОЛДЬТЩЗЙКЫЕГМЦЧНЯ;ABCDEFGHIJKLMNOPQRSTUVWXYZ,фисвуапршолдьтщзйкыегмцчня;abcdefghijklmnopqrstuvwxyz";
   };
