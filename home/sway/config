@@ -10,6 +10,12 @@ font pango: JetBrains Mono Nerd Font 10
 # set the mod key to the winkey:
 set $mod Mod4
 
+# Home row direction keys, like vim -- the same as sway's own default config.
+set $left h
+set $down j
+set $up k
+set $right l
+
 # Wallpaper
 output * bg ~/.config/sway/wallpaper.png fill
 
@@ -76,10 +82,10 @@ bindsym $mod+Shift+0    move container to workspace  $ws10
 
 # resize window (you can also use the mouse for that)
 mode "resize" {
-        bindsym j resize shrink width 10 px or 10 ppt
-        bindsym k resize grow height 10 px or 10 ppt
-        bindsym l resize shrink height 10 px or 10 ppt
-        bindsym semicolon resize grow width 10 px or 10 ppt
+        bindsym $left resize shrink width 10 px or 10 ppt
+        bindsym $down resize grow height 10 px or 10 ppt
+        bindsym $up resize shrink height 10 px or 10 ppt
+        bindsym $right resize grow width 10 px or 10 ppt
 
         # same bindings, but for the arrow keys
         bindsym Left resize shrink width 10 px or 10 ppt
@@ -112,9 +118,8 @@ bindsym $mod+q kill
 bindsym $mod+Shift+e exec ~/.config/sway/scripts/powermenu
 
 # Lock the system.
-# Ctrl is required: bare $mod+l put lock on the key physically between
-# $mod+k (focus down) and $mod+semicolon (focus right), so a mis-hit while
-# switching windows locked the screen.
+# Ctrl is required: bare $mod+l is focus right, and a lock on a navigation key
+# turns every mis-hit while switching windows into a locked screen.
 bindsym $mod+Ctrl+l exec ~/.config/sway/scripts/lock
 
 # reload the configuration file
@@ -132,10 +137,10 @@ bindsym XF86MonBrightnessUp exec brightnessctl set +10% && notify-send -h string
 bindsym XF86MonBrightnessDown exec brightnessctl set 10%- && notify-send -h string:x-dunst-stack-tag:brightness "Brightness - $(brightnessctl -m | cut -d, -f4)"
 
 # change focus
-bindsym $mod+j focus left
-bindsym $mod+k focus down
-bindsym $mod+b focus up
-bindsym $mod+semicolon focus right
+bindsym $mod+$left focus left
+bindsym $mod+$down focus down
+bindsym $mod+$up focus up
+bindsym $mod+$right focus right
 
 # alternatively, you can use the cursor keys:
 bindsym $mod+Left focus left
@@ -144,10 +149,10 @@ bindsym $mod+Up focus up
 bindsym $mod+Right focus right
 
 # move focused window
-bindsym $mod+Shift+j move left
-bindsym $mod+Shift+k move down
-bindsym $mod+Shift+b move up
-bindsym $mod+Shift+semicolon move right
+bindsym $mod+Shift+$left move left
+bindsym $mod+Shift+$down move down
+bindsym $mod+Shift+$up move up
+bindsym $mod+Shift+$right move right
 
 # alternatively, you can use the cursor keys:
 bindsym $mod+Shift+Left move left
@@ -155,11 +160,9 @@ bindsym $mod+Shift+Down move down
 bindsym $mod+Shift+Up move up
 bindsym $mod+Shift+Right move right
 
-# split in horizontal orientation
-bindsym $mod+h split h
-
-# split in vertical orientation
-bindsym $mod+v split v
+# next window opens beside the focused one / below it
+bindsym $mod+b splith
+bindsym $mod+v splitv
 
 # enter fullscreen mode for the focused container
 bindsym $mod+f fullscreen toggle
