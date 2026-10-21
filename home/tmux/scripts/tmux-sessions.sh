@@ -8,6 +8,7 @@ PROJECTS["bidflow"]="$SCRIPTS_DIR/bidflow.sh"
 PROJECTS["pixie"]="$SCRIPTS_DIR/pixie.sh"
 PROJECTS["nixconf"]="$SCRIPTS_DIR/nixconf.sh"
 PROJECTS["datadelenhc"]="$SCRIPTS_DIR/datadelenhc.sh"
+PROJECTS["investments"]="$SCRIPTS_DIR/investments.sh"
 PROJECTS["k8s"]="$SCRIPTS_DIR/k8s.sh"
 PROJECTS["k8s break-glass"]="$SCRIPTS_DIR/k8s-breakglass.sh"
 
