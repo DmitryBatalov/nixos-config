@@ -5,6 +5,7 @@
     ../../home/core.nix
     ../../home/packages.nix
 
+    ../../home/cheatsheets
     ../../home/desktop
     ../../home/kube
     ../../home/rofi

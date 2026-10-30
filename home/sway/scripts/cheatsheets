@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+# Cheat sheet picker via rofi; the PDFs are built from home/cheatsheets/sheets.
+# Most opened first: rofi -dmenu keeps no history, so count opens ourselves.
+SHEETS_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/cheatsheets"
+USAGE="${XDG_CACHE_HOME:-$HOME/.cache}/cheatsheets-usage"
+
+touch "$USAGE"
+
+# "<count> <name>" for every sheet (0 when never opened), highest count first,
+# then by name
+chosen=$(find -L "$SHEETS_DIR" -maxdepth 1 -name '*.pdf' -printf '%f\n' \
+  | sed 's/\.pdf$//' \
+  | awk 'FILENAME == ARGV[1] { n[$2] = $1; next } { print (n[$1] + 0), $1 }' "$USAGE" - \
+  | sort -k1,1nr -k2,2 | cut -d' ' -f2 \
+  | rofi -dmenu -i -matching fuzzy -p "cheat sheet" -config ~/.config/rofi/rofidmenu.rasi)
+
+[ -z "$chosen" ] || [ ! -f "$SHEETS_DIR/$chosen.pdf" ] && exit 0
+
+awk -v s="$chosen" '$2 == s { $1++; hit = 1 } { print } END { if (!hit) print 1, s }' \
+  "$USAGE" > "$USAGE.tmp" && mv "$USAGE.tmp" "$USAGE"
+
+# Already open: bring it out of the scratchpad instead of opening a second one.
+# A new window goes to the scratchpad by the sway rule for zathura.
+swaymsg "[app_id=\"org.pwmt.zathura\" title=\"cheatsheets/$chosen\\.pdf\"] focus" >/dev/null 2>&1 \
+  || exec zathura "$SHEETS_DIR/$chosen.pdf"

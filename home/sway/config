@@ -111,6 +111,17 @@ bindsym $mod+Return exec ${TERMINAL:-kitty}
 # open tmux project session picker
 bindsym $mod+Shift+t exec ~/.config/tmux/scripts/tmux-sessions.sh
 
+# open cheat sheet picker (PDFs built from home/cheatsheets/sheets)
+bindsym $mod+Shift+s exec ~/.config/sway/scripts/cheatsheets
+
+# Cheat sheets live in the scratchpad, floating over the current workspace;
+# $mod+c shows / hides them. Only zathura windows with a cheat sheet path in
+# the title match, so other PDFs and other scratchpad windows are untouched.
+for_window [app_id="org.pwmt.zathura" title="cheatsheets/"] floating enable, \
+    resize set width 90 ppt height 90 ppt, move position center, \
+    move scratchpad, scratchpad show
+bindsym $mod+c [app_id="org.pwmt.zathura" title="cheatsheets/"] scratchpad show
+
 # kill focused window
 bindsym $mod+q kill
 
