@@ -22,10 +22,42 @@
       export PATH=$PATH:${sdk}/bin
       exec ${pkgs.fsautocomplete}/lib/fsautocomplete/fsautocomplete "$@"
     '';
+
+  # Not in nixpkgs. The server lives in the Quint repo next to the VS Code
+  # extension, so build it from the same source as the `quint` CLI.
+  quint-language-server = pkgs.buildNpmPackage {
+    pname = "quint-language-server";
+    version = "0.19.0";
+    inherit (pkgs.quint) src;
+    sourceRoot = "${pkgs.quint.src.name}/vscode/quint-vscode/server";
+    npmDepsHash = "sha256-BT5KN9E5aRUIJQR0zGlT00tDmRpS2oFF/yOdQOPIGgQ=";
+    npmBuildScript = "compile";
+    # Upstream resolves this type-only import through the extension's parent
+    # node_modules; vscode-languageserver exports the same type.
+    postPatch = ''
+      substituteInPlace src/complete.ts \
+        --replace-fail "from 'vscode-languageclient'" "from 'vscode-languageserver'"
+    '';
+    meta.mainProgram = "quint-language-server";
+  };
 in {
+  filetype.extension.qnt = "quint";
+
+  # nvim-lspconfig has no Quint config, so define the server here.
+  lsp.servers.quint = {
+    enable = true;
+    package = quint-language-server;
+    config = {
+      cmd = ["quint-language-server" "--stdio"];
+      filetypes = ["quint"];
+      root_markers = [".git"];
+    };
+  };
+
   extraPackages = with pkgs; [
     tlaplus-toolbox
     alloy
+    quint
     prettier
     alejandra
     stylua
@@ -153,6 +185,8 @@ in {
         fsharp
         tlaplus
         typst
+        # Not an nvim-treesitter language; nixpkgs' grammar ships its own queries.
+        pkgs.tree-sitter-grammars.tree-sitter-quint
         markdown
         yaml
         json
