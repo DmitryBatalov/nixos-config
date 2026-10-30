@@ -67,7 +67,6 @@ in {
   extraPackages = with pkgs; [
     tlaplus-toolbox
     alloy
-    quint
     prettier
     alejandra
     stylua
