@@ -24,22 +24,32 @@
     '';
 
   # Not in nixpkgs. The server lives in the Quint repo next to the VS Code
-  # extension, so build it from the same source as the `quint` CLI.
-  quint-language-server = pkgs.buildNpmPackage {
-    pname = "quint-language-server";
-    version = "0.19.0";
-    inherit (pkgs.quint) src;
-    sourceRoot = "${pkgs.quint.src.name}/vscode/quint-vscode/server";
-    npmDepsHash = "sha256-BT5KN9E5aRUIJQR0zGlT00tDmRpS2oFF/yOdQOPIGgQ=";
-    npmBuildScript = "compile";
-    # Upstream resolves this type-only import through the extension's parent
-    # node_modules; vscode-languageserver exports the same type.
-    postPatch = ''
-      substituteInPlace src/complete.ts \
-        --replace-fail "from 'vscode-languageclient'" "from 'vscode-languageserver'"
-    '';
-    meta.mainProgram = "quint-language-server";
-  };
+  # extension. It bundles the Quint core from npm one release behind the repo
+  # tag (server 0.19 in v0.32.0 had core 0.31, which lacks `leadsTo`), so pin
+  # the tag here instead of following nixvim's `pkgs.quint`.
+  quint-language-server = let
+    src = pkgs.fetchFromGitHub {
+      owner = "quint-co";
+      repo = "quint";
+      tag = "v0.33.0";
+      hash = "sha256-ywcK3GahcA/GWoKTAYr9lSU7k2r1OfA5OALp4f04Vxs=";
+    };
+  in
+    pkgs.buildNpmPackage {
+      pname = "quint-language-server";
+      version = "0.20.0";
+      inherit src;
+      sourceRoot = "${src.name}/vscode/quint-vscode/server";
+      npmDepsHash = "sha256-Y0p5mYc8JsjnsBz0MQCEZl41NoDQeq/zAwxNJBRA4fI=";
+      npmBuildScript = "compile";
+      # Upstream resolves this type-only import through the extension's parent
+      # node_modules; vscode-languageserver exports the same type.
+      postPatch = ''
+        substituteInPlace src/complete.ts \
+          --replace-fail "from 'vscode-languageclient'" "from 'vscode-languageserver'"
+      '';
+      meta.mainProgram = "quint-language-server";
+    };
 in {
   filetype.extension.qnt = "quint";
 
