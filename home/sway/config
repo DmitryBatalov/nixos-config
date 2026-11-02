@@ -115,12 +115,14 @@ bindsym $mod+Shift+t exec ~/.config/tmux/scripts/tmux-sessions.sh
 bindsym $mod+Shift+s exec ~/.config/sway/scripts/cheatsheets
 
 # Cheat sheets live in the scratchpad, floating over the current workspace;
-# $mod+c shows / hides them. Only zathura windows with a cheat sheet path in
-# the title match, so other PDFs and other scratchpad windows are untouched.
-for_window [app_id="org.pwmt.zathura" title="cheatsheets/"] floating enable, \
+# $mod+c shows / hides them. Match on app_id alone: zathura maps titled
+# "zathura" and only gets the file path after sway has tiled it, and a rule
+# fired that late loses its resize to the tiled-size buffer zathura commits
+# next. zathura is the cheat sheet viewer only (other PDFs open in evince).
+for_window [app_id="org.pwmt.zathura"] floating enable, \
     resize set width 90 ppt height 90 ppt, move position center, \
     move scratchpad, scratchpad show
-bindsym $mod+c [app_id="org.pwmt.zathura" title="cheatsheets/"] scratchpad show
+bindsym $mod+c [app_id="org.pwmt.zathura"] scratchpad show
 
 # kill focused window
 bindsym $mod+q kill

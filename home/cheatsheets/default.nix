@@ -10,8 +10,9 @@
 in {
   xdg.dataFile."cheatsheets".source = pdfs;
 
-  # The viewer of the cheat sheets only: its window title is the file path,
-  # which lets the sway rule send these windows -- and no other PDF -- to the
-  # scratchpad. Other PDFs keep opening in evince (home/desktop mime list).
+  # The viewer of the cheat sheets only: the sway rule sends every zathura
+  # window to the scratchpad. Other PDFs keep opening in evince (home/desktop
+  # mime list). The picker still tells sheets apart by the window title, which
+  # zathura sets to the file path.
   programs.zathura.enable = true;
 }
