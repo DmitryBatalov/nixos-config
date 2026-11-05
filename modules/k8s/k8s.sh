@@ -468,10 +468,18 @@ trap 'exit 143' TERM
 # Decrypt into memory, never onto disk. age-plugin-fido2-hmac writes its PIN
 # prompt to /dev/tty, so command substitution -- which captures only stdout --
 # still lets the prompt reach the terminal.
-printf 'k8s: unlocking the minter kubeconfig -- the token wants its PIN and a touch.\n' >&2
-printf '     The plugin overwrites its own prompt line, so the PIN request can look\n' >&2
-printf '     like a blank line waiting for input. Type it anyway.\n' >&2
+# The first line is also the only confirmation of the touch sudo asked for:
+# pam_u2f prints nothing on success, and the PIN/touch request that follows
+# reads like a retry unless it says it is a second, separate one.
+printf 'k8s: sudo accepted the touch. Unlocking the minter kubeconfig takes the PIN\n' >&2
+printf '     and a touch once more. The plugin overwrites its own prompt line, so\n' >&2
+printf '     this PIN request can look like a blank line. Type it anyway.\n' >&2
 minter=$(age -d -i "$IDENTITY" "$CIPHER")
+
+# age exits silently once the token is touched, and the two cluster calls
+# below can take seconds. Without a line here a registered touch and a missed
+# one look the same.
+printf 'k8s: touch registered, minter unlocked. Minting a token for %s/%s...\n' "$SA_NS" "$SA" >&2
 
 # printf here must stay a shell builtin: an external one would put the whole
 # kubeconfig into a process's argv, visible in /proc/*/cmdline.
