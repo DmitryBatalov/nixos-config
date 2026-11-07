@@ -17,6 +17,7 @@
     ../../home/programs/kitty.nix
     ../../home/programs/rider.nix
     ../../home/programs/shell.nix
+    ../../home/programs/sops.nix
     ../../home/programs/ssh.nix
 
     ../../home/services/backup-notify.nix
