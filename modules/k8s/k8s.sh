@@ -704,7 +704,7 @@ printf 'k8s: %s as system:serviceaccount:%s:%s (expires %s)\n' \
 # still runs because this is not an exec.
 # The child still gets the narrow PATH: a tool that spawns helpers -- kubectl
 # credential plugins, helm's post-renderer -- must not reach past the set.
+# Only the child: narrowing the wrapper's own PATH left the EXIT trap without
+# rm, so $work -- token and all -- outlived every run.
 # shellcheck disable=SC2031  # deliberately the same value as the lookup used.
-export PATH=$RUN_PATH
-
-"$tool_path" "$@"
+PATH=$RUN_PATH "$tool_path" "$@"
