@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # k8s -- hardware-gated Kubernetes access.
 #
-#   sudo k8s login            unlock once, get a read-only session for the day
-#   kubectl / k9s             then just work, as you, until it expires
-#   sudo k8s --breakglass …   privileged actions, gated on every single call
-#   sudo k8s shell            a working session under a uid you cannot read
-#   k8s logout                drop the session early
+#   sudo k8s login --cluster NAME           unlock once, a read-only session for the day
+#   kubectl / k9s --context k8s-NAME        then just work, as you, until it expires
+#   sudo k8s --cluster NAME --breakglass …  privileged actions, gated on every call
+#   sudo k8s shell --cluster NAME           a working session under a uid you cannot read
+#   k8s logout --cluster NAME               drop the session early
 #
 # The privileged kubeconfig never exists in the clear on disk: it is
 # age-encrypted to a FIDO2 credential on a hardware token, and decrypted into
@@ -45,8 +45,10 @@ set -euo pipefail
 PATH="${K8S_TOOL_PATH:-/run/current-system/sw/bin:/usr/bin:/bin}"
 export PATH
 
-CIPHER=${K8S_MINTER_AGE:-/etc/k8s/minter.conf.age}
 IDENTITY=${K8S_AGE_IDENTITY:-/etc/k8s/identity.txt}
+# One directory per cluster, chosen with --cluster; see resolve_cluster.
+CLUSTERS_DIR=${K8S_CLUSTERS_DIR:-/etc/k8s/clusters}
+CLUSTER=
 SA_NS=${K8S_SA_NAMESPACE:-team-access}
 SA_RO=${K8S_SA_RO:-ops-ro}
 SA_BG=${K8S_SA_BREAKGLASS:-breakglass}
@@ -55,7 +57,9 @@ TTL=${K8S_TTL:-15m}
 MAX_TTL_SECONDS=${K8S_MAX_TTL_SECONDS:-86400}
 TERMINALS=${K8S_TERMINALS:-*kitty* *foot* *alacritty* *wezterm* *ghostty* xterm* st}
 SESSION_TTL=${K8S_SESSION_TTL:-8h}
-SESSION_FILE=${K8S_SESSION_FILE:-.kube/k8s-session}
+# One session file per cluster, named after it: a directory of its own so a
+# viewer can watch it whole without picking up gcloud's backups.
+SESSION_DIR=${K8S_SESSION_DIR:-.kube/k8s-sessions}
 # `${VAR-default}` rather than `${VAR:-default}`: an *empty* value is a
 # deliberate "nothing may run", and the colon form would silently replace it
 # with the wrapper's own PATH -- turning allowedTools = [] into the widest
@@ -71,11 +75,17 @@ NS=
 usage() {
   cat >&2 <<'USAGE'
 Usage:
-  sudo k8s login [--ttl DURATION] [--force]   read-only session (default 8h)
-       k8s logout                             drop it
-  sudo k8s shell [--breakglass] [--ttl D]     a session under a separate uid
-  sudo k8s [--breakglass] [--ttl D] [-n NS] <tool> [args...]
+  sudo k8s login --cluster NAME [--ttl DURATION] [--force]
+                                    read-only session (default 8h)
+       k8s logout --cluster NAME    drop it
+  sudo k8s shell --cluster NAME [--breakglass] [--ttl D]
+                                    a session under a separate uid
+  sudo k8s --cluster NAME [--breakglass] [--ttl D] [-n NS] <tool> [args...]
 
+  --cluster NAME  required, every form: the credential in
+                  /etc/k8s/clusters/NAME. There is no default cluster, so
+                  production is never reached by leaving something out.
+                  login writes ~/.kube/k8s-sessions/NAME, context k8s-NAME.
   --breakglass    assume the break-glass identity: full cluster-admin, named in
                   the audit log. Deliberately not called --rw: it is not
                   write access, it is everything.
@@ -89,9 +99,9 @@ Usage:
   It refuses to start inside your own tmux -- that server holds the pane and
   takes send-keys from any process with your uid.
 
-  sudo k8s login
-  k9s
-  sudo k8s --breakglass kubectl rollout restart deploy/api -n some-namespace
+  sudo k8s login --cluster prod
+  kubectl --context k8s-prod get pods
+  sudo k8s --cluster prod --breakglass kubectl rollout restart deploy/api -n some-namespace
 USAGE
 }
 
@@ -119,8 +129,6 @@ die() {
   exit "${2:-1}"
 }
 
-ACCOUNTS_FILE=${K8S_ACCOUNTS_FILE:-/etc/k8s/accounts}
-
 # The namespace and the two account names are deployment state, not
 # configuration: they say which namespace on which cluster holds an account with
 # full rights. The module that carries this script is public, so they live
@@ -130,36 +138,38 @@ ACCOUNTS_FILE=${K8S_ACCOUNTS_FILE:-/etc/k8s/accounts}
 # Parsed, not sourced. The file belongs to root, but these values are
 # interpolated into kubectl's argv and into a generated kubeconfig, so they are
 # read as data and then checked, rather than executed and trusted.
-if [ -r "$ACCOUNTS_FILE" ]; then
-  while IFS= read -r line || [ -n "$line" ]; do
-    case $line in
-      '#'* | '') continue ;;
-    esac
-    key=${line%%=*}
-    val=${line#*=}
-    key=${key//[[:space:]]/}
-    val=${val//[[:space:]]/}
-    case $key in
-      namespace) SA_NS=$val ;;
-      readonly) SA_RO=$val ;;
-      breakglass) SA_BG=$val ;;
-      *) die "$ACCOUNTS_FILE: unknown key '$key'" ;;
-    esac
-  done < "$ACCOUNTS_FILE"
-fi
+load_accounts() {
+  if [ -r "$ACCOUNTS_FILE" ]; then
+    while IFS= read -r line || [ -n "$line" ]; do
+      case $line in
+        '#'* | '') continue ;;
+      esac
+      key=${line%%=*}
+      val=${line#*=}
+      key=${key//[[:space:]]/}
+      val=${val//[[:space:]]/}
+      case $key in
+        namespace) SA_NS=$val ;;
+        readonly) SA_RO=$val ;;
+        breakglass) SA_BG=$val ;;
+        *) die "$ACCOUNTS_FILE: unknown key '$key'" ;;
+      esac
+    done < "$ACCOUNTS_FILE"
+  fi
 
-# Checked whether they came from the file or from the module. A namespace is a
-# DNS-1123 label, a ServiceAccount name a subdomain, so the latter may contain
-# dots and the former may not. Both are interpolated into a kubeconfig below,
-# and a name carrying a quote or a newline would break out of it.
-case $SA_NS in
-  *[!a-z0-9-]* | -* | *- | "") die "not a valid namespace: $SA_NS" ;;
-esac
-for sa in "$SA_RO" "$SA_BG"; do
-  case $sa in
-    *[!a-z0-9.-]* | [-.]* | *[-.] | "") die "not a valid ServiceAccount name: $sa" ;;
+  # Checked whether they came from the file or from the module. A namespace is a
+  # DNS-1123 label, a ServiceAccount name a subdomain, so the latter may contain
+  # dots and the former may not. Both are interpolated into a kubeconfig below,
+  # and a name carrying a quote or a newline would break out of it.
+  case $SA_NS in
+    *[!a-z0-9-]* | -* | *- | "") die "not a valid namespace: $SA_NS" ;;
   esac
-done
+  for sa in "$SA_RO" "$SA_BG"; do
+    case $sa in
+      *[!a-z0-9.-]* | [-.]* | *[-.] | "") die "not a valid ServiceAccount name: $sa" ;;
+    esac
+  done
+}
 
 # Which process holds the master end of our controlling terminal. That is part
 # of the wiring rather than something a program claims about itself: a terminal
@@ -235,6 +245,7 @@ while [ $# -gt 0 ]; do
     --breakglass) profile=breakglass; shift ;;
     --ro) profile=ro; shift ;;
     --force) force=1; shift ;;
+    --cluster) CLUSTER=${2:?--cluster needs a value}; shift 2 ;;
     --ttl) TTL=${2:?--ttl needs a value}; ttl_given=1; shift 2 ;;
     -n | --ns) NS=${2:?--ns needs a value}; shift 2 ;;
     -h | --help) usage; exit 0 ;;
@@ -259,9 +270,9 @@ if [ "$mode" = run ]; then
   if [ "$tool" = k9s ]; then
     printf 'k8s: k9s is not run through the wrapper -- it would be a root process in\n' >&2
     printf '     your terminal for as long as it stays open, and anything running as\n' >&2
-    printf '     you could drive it. Run "sudo k8s shell" and start k9s inside, where the\n' >&2
-    printf '     tmux server belongs to another account, or "sudo k8s login" and run it\n' >&2
-    printf '     as yourself.\n' >&2
+    printf '     you could drive it. Run "sudo k8s shell --cluster NAME" and start k9s\n' >&2
+    printf '     inside, where the tmux server belongs to another account, or\n' >&2
+    printf '     "sudo k8s login --cluster NAME" and run it as yourself.\n' >&2
     exit 2
   fi
 
@@ -286,6 +297,48 @@ if [ "$mode" = run ]; then
     esac
   done
 fi
+
+# Which cluster. Always named: with a default, the cluster an unqualified
+# command reached would be whichever was set up first, and leaving out a flag
+# is not a choice anyone notices making.
+#
+# The credential, the accounts file and optionally an identity come from
+# $CLUSTERS_DIR/NAME, and login writes $SESSION_DIR/NAME, whose cluster, user
+# and context are all k8s-NAME. Separate files because the session is written
+# by the user and dropped by `logout` whole; distinct names because KUBECONFIG
+# merges files by entry name, and two files that both call their context the
+# same would silently shadow one another.
+#
+# NAME becomes part of paths and of the kubeconfig, so it is a DNS-1123 label:
+# no slash to climb out of $CLUSTERS_DIR, no quote to break out of the YAML.
+#
+# $CLUSTERS_DIR is root-only, so the names are listed under sudo and not before.
+known_clusters() {
+  local c known=
+  for c in "$CLUSTERS_DIR"/*/minter.conf.age; do
+    [ -e "$c" ] || continue
+    c=${c%/minter.conf.age}
+    known="$known ${c##*/}"
+  done
+  printf '%s' "${known:+, one of:$known}"
+}
+resolve_cluster() {
+  [ -n "$CLUSTER" ] || die "--cluster NAME is required$(known_clusters)" 2
+  case $CLUSTER in
+    *[!a-z0-9-]* | -* | *-) die "not a valid cluster name: $CLUSTER" 2 ;;
+  esac
+  local dir=$CLUSTERS_DIR/$CLUSTER
+  CIPHER=$dir/minter.conf.age
+  ACCOUNTS_FILE=$dir/accounts
+  # A cluster may bring its own identity -- install-credential.sh writes one
+  # into the directory it is given -- or share the machine's.
+  if [ -e "$dir/identity.txt" ]; then IDENTITY=$dir/identity.txt; fi
+  SESSION_FILE=$SESSION_DIR/$CLUSTER
+  kc_cluster=k8s-$CLUSTER
+  kc_user=k8s-$CLUSTER
+  kc_context=k8s-$CLUSTER
+}
+resolve_cluster
 
 # NS is interpolated into YAML below, and TTL into --duration. Reject both here
 # rather than after the PIN and the touch have already been spent.
@@ -358,7 +411,9 @@ if [ "$mode" = logout ]; then
   # against exactly this by writing through `sudo -u`; logout has to drop the
   # same way, or a symlink turns root's `rm` into someone else's choice of file.
   if [ "$(id -u)" -eq 0 ]; then
-    exec sudo -u "$target_user" "$0" logout
+    # sudo would set SUDO_USER to root in the child, which then looks for the
+    # session in root's home, finds none and reports success.
+    exec sudo -u "$target_user" env -u SUDO_USER "$0" logout --cluster "$CLUSTER"
   fi
   [ -e "$session_config" ] || die "no session" 0
   written_by_us "$session_config" \
@@ -402,20 +457,24 @@ if [ "$mode" = run ]; then
     || die "$tool is not one of the tools this wrapper may run ($RUN_PATH)" 2
 fi
 
-case $profile in
-  ro) SA=$SA_RO ;;
-  breakglass) SA=$SA_BG ;;
-  *) die "unknown profile" 2 ;;
-esac
-
 # Everything that can refuse the request must refuse it here: past this point
 # the user has already spent a PIN entry and a touch.
 first_login=0
 if [ "$mode" = login ]; then
   [ "$ttl_given" -eq 1 ] || TTL=$SESSION_TTL
-  [ -e "$session_config" ] || first_login=1
-  if [ -e "$session_config" ] && [ "$force" -ne 1 ] && ! written_by_us "$session_config"; then
-    die "$session_config exists and was not written by this tool; use --force to replace it"
+  # Looked at as the user, like the write below: the path is in their $HOME, so
+  # root must not follow a symlink planted there into a file only root can
+  # read, nor open a FIFO in its place and hang before the PIN is asked for.
+  # A FIFO or anything else that is not a plain file is refused, not read.
+  if sudo -u "$target_user" test -e "$session_config"; then
+    if [ "$force" -ne 1 ] && ! {
+      sudo -u "$target_user" test -f "$session_config" \
+        && sudo -u "$target_user" head -1 "$session_config" | grep -qF 'k8s-session'
+    }; then
+      die "$session_config exists and was not written by this tool; use --force to replace it"
+    fi
+  else
+    first_login=1
   fi
 fi
 
@@ -423,6 +482,20 @@ if [ "$mode" = shell ]; then
   [ "$ttl_given" -eq 1 ] || TTL=$SHELL_TTL
 fi
 
+# Read here, as root: the file is 0400 root, so earlier it would only have been
+# skipped silently for a non-root caller.
+load_accounts
+
+# After load_accounts, which may rename both accounts: picked any earlier, SA
+# would be the module's default while SA_NS came from the file.
+case $profile in
+  ro) SA=$SA_RO ;;
+  breakglass) SA=$SA_BG ;;
+  *) die "unknown profile" 2 ;;
+esac
+
+# A mistyped name is told apart from an unreadable credential.
+[ -e "$CIPHER" ] || die "no such cluster: $CLUSTER$(known_clusters)" 2
 for f in "$CIPHER" "$IDENTITY"; do
   [ -r "$f" ] || die "cannot read $f"
 done
@@ -479,7 +552,8 @@ minter=$(age -d -i "$IDENTITY" "$CIPHER")
 # age exits silently once the token is touched, and the two cluster calls
 # below can take seconds. Without a line here a registered touch and a missed
 # one look the same.
-printf 'k8s: touch registered, minter unlocked. Minting a token for %s/%s...\n' "$SA_NS" "$SA" >&2
+printf 'k8s: touch registered, minter unlocked. Minting a token for %s/%s%s...\n' \
+  "$SA_NS" "$SA" " on $CLUSTER" >&2
 
 # printf here must stay a shell builtin: an external one would put the whole
 # kubeconfig into a process's argv, visible in /proc/*/cmdline.
@@ -523,7 +597,7 @@ render_kubeconfig() {
   printf '%s\n' "$MARKER"
   printf '# identity: system:serviceaccount:%s:%s\n' "$SA_NS" "$SA"
   printf '# expires:  %s\n' "$expires"
-  printf 'apiVersion: v1\nkind: Config\nclusters:\n- name: target\n  cluster:\n'
+  printf 'apiVersion: v1\nkind: Config\nclusters:\n- name: %s\n  cluster:\n' "$kc_cluster"
   printf '    server: %s\n' "$server"
   if [ -n "$ca_data" ]; then
     printf '    certificate-authority-data: %s\n' "$ca_data"
@@ -531,10 +605,11 @@ render_kubeconfig() {
     printf '    certificate-authority: %s\n' "$ca_file"
   fi
   if [ "$insecure" = true ]; then printf '    insecure-skip-tls-verify: true\n'; fi
-  printf 'users:\n- name: ops\n  user:\n    token: %s\n' "$token"
-  printf 'contexts:\n- name: ops\n  context:\n    cluster: target\n    user: ops\n'
+  printf 'users:\n- name: %s\n  user:\n    token: %s\n' "$kc_user" "$token"
+  printf 'contexts:\n- name: %s\n  context:\n    cluster: %s\n    user: %s\n' \
+    "$kc_context" "$kc_cluster" "$kc_user"
   if [ -n "$NS" ]; then printf '    namespace: %s\n' "$NS"; fi
-  printf 'current-context: ops\n'
+  printf 'current-context: %s\n' "$kc_context"
 }
 
 # ----------------------------------------------------------------- login ----
@@ -547,11 +622,17 @@ if [ "$mode" = login ]; then
   render_kubeconfig | sudo -u "$target_user" sh -c 'umask 077; cat > "$1"' sh "$session_config"
   unset token
   printf 'k8s: read-only session for %s until %s\n' "$target_user" "$expires" >&2
-  printf 'k8s: kubectl and k9s now work without sudo. "k8s logout" ends it.\n' >&2
+  # KUBECONFIG takes current-context from the first file that sets one, so
+  # with several session files the context is named, not assumed.
+  printf 'k8s: kubectl --context %s and k9s --context %s now work without sudo.\n' \
+    "$kc_context" "$kc_context" >&2
+  printf '     "k8s logout --cluster %s" ends it.\n' "$CLUSTER" >&2
   if [ "$first_login" -eq 1 ]; then
-    printf "k8s: put this in your shell profile so both clusters coexist --\n" >&2
+    # Appended, not assigned: KUBECONFIG may already list other clusters'
+    # sessions, and replacing it would hide them.
+    printf "k8s: kubectl only sees this session if KUBECONFIG lists it --\n" >&2
     printf "       gcloud writes ~/.kube/config, this writes the session file:\n" >&2
-    printf "       export KUBECONFIG=\$HOME/.kube/config:\$HOME/%s\n" "$SESSION_FILE" >&2
+    printf "       export KUBECONFIG=\${KUBECONFIG:-\$HOME/.kube/config}:\$HOME/%s\n" "$SESSION_FILE" >&2
   fi
   exit 0
 fi
@@ -565,6 +646,9 @@ if [ "$mode" = shell ]; then
   # and learn nothing about what else is in /run.
   chmod 711 "$work"
   sess=$work/session
+  # Which cluster belongs in every label: with several, a break-glass prompt
+  # that names only the account does not say where the next command lands.
+  label=$SA@$CLUSTER
   mkdir -p "$sess/work"
 
   render_kubeconfig > "$sess/config"
@@ -578,7 +662,7 @@ if [ "$mode" = shell ]; then
     printf 'set -g default-terminal "tmux-256color"\n'
     printf 'set -g history-limit 20000\n'
     printf 'set -g mouse on\n'
-    printf 'set -g status-left-length 40\n'
+    printf 'set -g status-left-length 60\n'
     printf 'set -g status-right-length 60\n'
     if [ "$profile" = breakglass ]; then
       # The window background comes from tmux, not from the terminal that
@@ -590,14 +674,14 @@ if [ "$mode" = shell ]; then
       printf 'set -g pane-border-style fg=#7f1d1d\n'
       printf 'set -g pane-active-border-style fg=#ff3b3b\n'
       printf 'set -g status-style bg=colour52,fg=colour223\n'
-      printf 'set -g status-left " BREAK-GLASS  %s "\n' "$SA"
+      printf 'set -g status-left " BREAK-GLASS  %s "\n' "$label"
     else
       printf 'set -g window-style "bg=#08052b,fg=#d0d8ff"\n'
       printf 'set -g window-active-style "bg=#08052b,fg=#d0d8ff"\n'
       printf 'set -g pane-border-style fg=#1c2a4a\n'
       printf 'set -g pane-active-border-style fg=#5294e2\n'
       printf 'set -g status-style bg=colour23,fg=colour231\n'
-      printf 'set -g status-left " read-only  %s "\n' "$SA"
+      printf 'set -g status-left " read-only  %s "\n' "$label"
     fi
     printf 'set -g default-command "bash --rcfile %s/.bashrc -i"\n' "$sess"
     printf 'set -g status-right " expires %s "\n' "$expires"
@@ -609,7 +693,7 @@ if [ "$mode" = shell ]; then
     # default. This file is read last, so it is where the session's own PATH is
     # re-asserted.
     printf 'export PATH=%s\n' "$SHELL_PATH"
-    printf 'PS1="[%s] \\w \\$ "\n' "$SA"
+    printf 'PS1="[%s] \\w \\$ "\n' "$label"
     printf 'export KUBECONFIG=%s/config\n' "$sess"
     printf 'cd %s/work\n' "$sess"
     printf 'alias k=kubectl\n'
@@ -639,7 +723,8 @@ if [ "$mode" = shell ]; then
   chmod 700 "$sess" "$sess/work"
   chmod 600 "$sess/config"
 
-  printf 'k8s: session as system:serviceaccount:%s:%s until %s\n' "$SA_NS" "$SA" "$expires" >&2
+  printf 'k8s: session as system:serviceaccount:%s:%s%s until %s\n' \
+    "$SA_NS" "$SA" " on $CLUSTER" "$expires" >&2
   printf 'k8s: running as %s. Your home is not readable from here, and this\n' "$OPS_USER" >&2
   printf '     directory disappears when you close the session.\n' >&2
 
@@ -696,8 +781,8 @@ chmod 600 "$work/config"
 unset token
 export KUBECONFIG="$work/config"
 
-printf 'k8s: %s as system:serviceaccount:%s:%s (expires %s)\n' \
-  "$tool" "$SA_NS" "$SA" "$expires" >&2
+printf 'k8s: %s as system:serviceaccount:%s:%s%s (expires %s)\n' \
+  "$tool" "$SA_NS" "$SA" " on $CLUSTER" "$expires" >&2
 
 # The resolved absolute path is executed, so nothing is looked up a second
 # time. set -e propagates the tool's exact exit status, and the EXIT trap

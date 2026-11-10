@@ -69,15 +69,14 @@
     K8S_TOOL_PATH = wrapperPath;
     K8S_RUN_PATH = runPath;
     K8S_SHELL_PATH = shellPath;
-    K8S_MINTER_AGE = cfg.cipherFile;
     K8S_AGE_IDENTITY = cfg.identityFile;
-    K8S_ACCOUNTS_FILE = cfg.accountsFile;
+    K8S_CLUSTERS_DIR = cfg.clustersDir;
     K8S_SA_NAMESPACE = cfg.serviceAccountNamespace;
     K8S_SA_RO = cfg.readOnlyServiceAccount;
     K8S_SA_BREAKGLASS = cfg.breakGlassServiceAccount;
     K8S_TTL = cfg.ttl;
     K8S_SESSION_TTL = cfg.sessionTtl;
-    K8S_SESSION_FILE = cfg.sessionFile;
+    K8S_SESSION_DIR = cfg.sessionDir;
     K8S_OPS_USER = cfg.opsUser;
     K8S_SHELL_TTL = cfg.shellTtl;
     K8S_TERMINALS = lib.concatStringsSep " " cfg.terminals;
@@ -105,35 +104,6 @@ in {
     enable =
       lib.mkEnableOption "hardware-gated Kubernetes access with short-lived tokens";
 
-    cipherFile = lib.mkOption {
-      type = lib.types.str;
-      default = "/etc/k8s/minter.conf.age";
-      description = ''
-        A kubeconfig for the minting ServiceAccount, age-encrypted to a FIDO2
-        credential on a hardware token.
-
-        The account it authenticates holds one verb: create a token for the two
-        ServiceAccounts below. It cannot read a Secret, list a Pod, create a
-        binding, or mint for itself.
-
-        Do not read that as "this file is harmless". One of the two accounts is
-        cluster-admin, so whoever holds the *decrypted* contents is cluster-admin
-        one API call away. What the indirection buys is that the call is recorded
-        by the apiserver instead of being a silent read of a stored admin token,
-        and that getting there costs a PIN and a touch -- factors a process
-        running as the user cannot supply. The file alone, without the token, is
-        inert. Treat it as a locked admin credential, not a low-value one.
-
-        Which cluster is reached comes from this kubeconfig's own
-        current-context, since the wrapper renders the session with --minify.
-
-        Deliberately not declarative and not in this repository: it is
-        per-machine credential state, and this repository is public. Create it
-        with:
-          age -R <recipient> -o /etc/k8s/minter.conf.age <plaintext kubeconfig>
-      '';
-    };
-
     identityFile = lib.mkOption {
       type = lib.types.str;
       default = "/etc/k8s/identity.txt";
@@ -146,40 +116,71 @@ in {
       '';
     };
 
-    accountsFile = lib.mkOption {
+    clustersDir = lib.mkOption {
       type = lib.types.str;
-      default = "/etc/k8s/accounts";
+      default = "/etc/k8s/clusters";
       description = ''
-        Optional file naming the namespace and the two ServiceAccounts, read at
-        run time and overriding the three options below.
+        One directory per cluster, chosen with `k8s --cluster NAME`. The flag is
+        required: there is no default cluster, so production is never reached
+        by leaving something out.
 
-        It exists because those names are deployment state, not configuration:
-        they say which namespace on which cluster holds an account with full
-        rights. This repository is public, and naming a cluster-admin account in
-        it is free reconnaissance for anyone who later reaches the apiserver --
-        which, until the network allowlist exists, is anyone. The same reasoning
-        keeps the credential and the manifests out of here.
+          NAME/minter.conf.age   that cluster's minter kubeconfig
+          NAME/accounts          optional; its namespace and account names
+          NAME/identity.txt      optional; identityFile is used without it
 
-        Three lines, `key = value`, root-owned and 0400 like its neighbours:
+        `k8s-access/install-credential.sh <kubeconfig> <ctx> <dir>` fills one in.
+
+        Moving from the single-cluster layout: nothing reads
+        /etc/k8s/minter.conf.age or /etc/k8s/accounts any more, nor keeps their
+        permissions, so move both into NAME/ (`install -d -m 0700`, then `mv`).
+
+        minter.conf.age is a kubeconfig for the minting ServiceAccount,
+        age-encrypted to a FIDO2 credential on a hardware token. The account it
+        authenticates holds one verb: create a token for the two ServiceAccounts
+        below. It cannot read a Secret, list a Pod, create a binding, or mint
+        for itself.
+
+        Do not read that as "this file is harmless". One of the two accounts is
+        cluster-admin, so whoever holds the *decrypted* contents is cluster-admin
+        one API call away. What the indirection buys is that the call is recorded
+        by the apiserver instead of being a silent read of a stored admin token,
+        and that getting there costs a PIN and a touch -- factors a process
+        running as the user cannot supply. The file alone, without the token, is
+        inert. Treat it as a locked admin credential, not a low-value one. The
+        wrapper renders the session with --minify, so the kubeconfig's own
+        current-context decides which cluster it reaches.
+
+        accounts names the namespace and the two ServiceAccounts, read at run
+        time and overriding the three options below. Those names are deployment
+        state, not configuration: they say which namespace on which cluster holds
+        an account with full rights, and naming a cluster-admin account in a
+        public repository is free reconnaissance for anyone who later reaches the
+        apiserver. Three lines, `key = value`, root-owned and 0400:
 
           namespace  = team-access
           readonly   = ops-ro
           breakglass = breakglass
 
-        Absent or unreadable, the options below apply unchanged, so a machine
-        that has nothing to hide can keep declaring them in the open.
+        Absent, the options below apply unchanged.
+
+        Neither the names nor the files are declared here: which clusters a
+        machine can reach is per-machine credential state, and this repository
+        is public. NAME is a DNS-1123 label; it names the session file
+        (sessionDir/NAME) and the context, `k8s-NAME`.
       '';
     };
 
-    sessionFile = lib.mkOption {
+    sessionDir = lib.mkOption {
       type = lib.types.str;
-      default = ".kube/k8s-session";
+      default = ".kube/k8s-sessions";
       description = ''
-        Where `k8s login` writes the session, relative to the user's home.
-        Deliberately NOT ~/.kube/config: gcloud owns that file for the GKE
-        contexts, and overwriting it would delete them. Point KUBECONFIG at
-        both so the clusters coexist:
-          export KUBECONFIG=$HOME/.kube/config:$HOME/.kube/k8s-session
+        Where `k8s login --cluster NAME` writes the session, as sessionDir/NAME,
+        relative to the user's home. Deliberately NOT ~/.kube/config: gcloud
+        owns that file for the GKE contexts, and overwriting it would delete
+        them. A directory of their own, so that KUBECONFIG can glob it and a
+        viewer such as Freelens can watch it whole without picking up anything
+        else under ~/.kube. Append each file in it to KUBECONFIG after
+        ~/.kube/config, which then keeps deciding current-context.
       '';
     };
 
@@ -384,11 +385,14 @@ in {
 
     systemd.tmpfiles.rules =
       map (d: "d ${d} 0700 root root -")
-      (lib.unique [(dirOf cfg.cipherFile) (dirOf cfg.identityFile) (dirOf cfg.accountsFile)])
+      (lib.unique [(dirOf cfg.identityFile) cfg.clustersDir])
       ++ [
-        "z ${cfg.cipherFile} 0400 root root -"
         "z ${cfg.identityFile} 0400 root root -"
-        "z ${cfg.accountsFile} 0400 root root -"
+        # `z` takes globs and skips what does not exist
+        "z ${cfg.clustersDir}/* 0700 root root -"
+        "z ${cfg.clustersDir}/*/minter.conf.age 0400 root root -"
+        "z ${cfg.clustersDir}/*/identity.txt 0400 root root -"
+        "z ${cfg.clustersDir}/*/accounts 0400 root root -"
       ];
 
     # Without secure_path, sudo resolves a bare command name through the
