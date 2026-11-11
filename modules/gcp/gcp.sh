@@ -57,14 +57,16 @@ for DURATION (30m, 1h -- the default --, 8h, 1d; at most 24h), after which
 Google stops honouring it on its own. `forever` grants it without a limit.
 
   sudo gcp grant errorreporting.viewer
-  sudo gcp grant compute.admin 30m
+  sudo gcp grant cloudsql.admin 30m
   sudo gcp grant cloudsql.viewer forever
 
 The limit bounds honest use, not a compromise: a thief holding your session
 inside the window could make the access outlast it. So grant refuses owner,
 editor and the IAM, key and impersonation roles; grant those, if ever, with
-an explicit add-iam-policy-binding. roles/viewer cannot expire and needs
-`forever`.
+an explicit add-iam-policy-binding. Roles that reach the cluster or what it
+runs -- container and compute admin, Artifact Registry writes -- are granted
+for at most 1h, after you type the role name back. roles/viewer cannot
+expire and needs `forever`.
 EOF
   exit "${1:-2}"
 }
@@ -222,11 +224,18 @@ load_settings
 # The limit bounds honest use, not a compromise: the account receiving the
 # role is the one whose token and browser session can be stolen, and a thief
 # holding it inside the window can make the access outlast it. So grant
-# refuses the roles that do that directly -- IAM administration, keys and
-# impersonation of service accounts, owner and editor. Granting one of those
-# is still possible, as an explicit add-iam-policy-binding. compute.admin and
-# container.admin can borrow a workload's service account, and are allowed;
-# keep them short.
+# refuses the roles that do that to the whole project -- IAM administration,
+# keys and impersonation of service accounts, owner and editor. Granting one
+# of those is still possible, as an explicit add-iam-policy-binding.
+#
+# The roles that reach around the hardware-gated paths to the cluster are
+# allowed, but only briefly and only after the role is typed back: write
+# access to GKE is what `sudo k8s --breakglass` exists to gate, and a
+# browser's Cloud Shell would use it as the everyday account; compute.admin
+# and instanceAdmin reach a node and its service account; and writing to
+# Artifact Registry is writing what production will run. Typing the name
+# guards against a command accepted without reading it, not against theft:
+# that is what the one-hour ceiling is for.
 grant_until=
 if [ "$1" = grant ]; then
   [ $# -ge 2 ] && [ $# -le 3 ] || usage
@@ -242,6 +251,15 @@ if [ "$1" = grant ]; then
       die "roles/$role would let the account keep access past any limit; grant it with add-iam-policy-binding if you must" 2
       ;;
   esac
+  risky=
+  case $role in
+    container.admin | container.clusterAdmin | container.developer)
+      risky="gives write access to the cluster around sudo k8s --breakglass" ;;
+    compute.admin | compute.instanceAdmin*)
+      risky="reaches the cluster's nodes and the service account they run as" ;;
+    artifactregistry.writer | artifactregistry.repoAdmin | artifactregistry.admin)
+      risky="can replace the images production runs" ;;
+  esac
   duration=${3:-1h}
   case $role:$duration in
     viewer:forever) ;;
@@ -249,6 +267,7 @@ if [ "$1" = grant ]; then
   esac
   case $duration in
     forever)
+      [ -z "$risky" ] || die "roles/$role $risky; it is granted for at most 1h, never forever" 2
       printf 'gcp: granting roles/%s to %s with no time limit\n' "$role" "$user" >&2
       set -- projects add-iam-policy-binding "$project" \
         --member "user:$user" --role "roles/$role" --condition=None --format=none
@@ -265,11 +284,22 @@ if [ "$1" = grant ]; then
         *d) secs=$((n * 86400)) ;;
       esac
       [ "$secs" -le 86400 ] || die "at most 24h; for longer, say 'forever' and remove it yourself" 2
+      [ -z "$risky" ] || [ "$secs" -le 3600 ] || die "roles/$role is granted for at most 1h" 2
       grant_until=$(date -u -d "@$(($(date +%s) + secs))" +%Y-%m-%dT%H:%M:%SZ)
-      printf 'gcp: granting roles/%s to %s until %s\n' "$role" "$user" "$grant_until" >&2
       ;;
     *) die "not a duration: $duration (30m, 1h, 8h, 1d, forever)" 2 ;;
   esac
+  if [ -n "$risky" ]; then
+    # From the terminal itself, not stdin: the answer must be typed, here.
+    : < /dev/tty 2> /dev/null || die "roles/$role needs a typed confirmation, and there is no terminal" 2
+    printf 'gcp: roles/%s %s,\n     until %s, to %s,\n     whose browser session can be stolen. Type the role name to confirm: ' \
+      "$role" "$risky" "$grant_until" "$user" > /dev/tty
+    read -r answer < /dev/tty || answer=
+    [ "${answer#roles/}" = "$role" ] || die "not confirmed; nothing granted" 2
+  fi
+  if [ -n "$grant_until" ]; then
+    printf 'gcp: granting roles/%s to %s until %s\n' "$role" "$user" "$grant_until" >&2
+  fi
 fi
 
 # A timed grant is one read-modify-write of the policy rather than
