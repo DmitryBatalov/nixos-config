@@ -27,11 +27,12 @@
   runTools = with pkgs; [google-cloud-sdk coreutils bash jq];
 
   # shell is a person at a prompt: a multiplexer, a pager, the usual text
-  # tools, clear and reset. Still nothing of the system profile, and no
-  # kubectl -- owner on the project is admin on its clusters, around
-  # sudo k8s --breakglass.
+  # tools, clear and reset, and age to encrypt what gcloud hands out -- not to
+  # decrypt, which takes the token, and gcp-run cannot open it. Still nothing
+  # of the system profile, and no kubectl: owner on the project is admin on
+  # its clusters, around sudo k8s --breakglass.
   # bashInteractive first: plain bash has no readline, so no history or arrows.
-  shellTools = [pkgs.bashInteractive] ++ runTools ++ (with pkgs; [tmux less gnugrep gnused findutils diffutils ncurses]);
+  shellTools = [pkgs.bashInteractive] ++ runTools ++ (with pkgs; [tmux less gnugrep gnused findutils diffutils ncurses age age-plugin-fido2-hmac]);
 
   settings = {
     # /run/wrappers/bin for the setuid sudo that drops to the user; the
