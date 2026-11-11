@@ -16,6 +16,7 @@
     openssl
     coreutils
     gnugrep
+    findutils # xargs, for the terminal check
     diffutils # cmp, for the install round trip
     util-linux # setpriv, to drop to runUser
   ];
@@ -24,6 +25,12 @@
   # bash and jq for the policy rewrite of a timed grant. The token it runs
   # with is the admin's, so nothing else is on its PATH.
   runTools = with pkgs; [google-cloud-sdk coreutils bash jq];
+
+  # shell is a person at a prompt: a multiplexer, a pager, the usual text
+  # tools. Still nothing of the system profile, and no kubectl -- owner on the
+  # project is admin on its clusters, around sudo k8s --breakglass.
+  # bashInteractive first: plain bash has no readline, so no history or arrows.
+  shellTools = [pkgs.bashInteractive] ++ runTools ++ (with pkgs; [tmux less gnugrep gnused findutils diffutils]);
 
   settings = {
     # /run/wrappers/bin for the setuid sudo that drops to the user; the
@@ -34,14 +41,20 @@
     GCP_DIR = cfg.dir;
     GCP_RUN_USER = cfg.runUser;
     GCP_GRANT_JQ = "${./grant.jq}";
+    GCP_SHELL_PATH = lib.makeBinPath shellTools;
+    # tmux runs commands through the account's login shell, and runUser has none.
+    GCP_SHELL_BASH = "${pkgs.bashInteractive}/bin/bash";
+    GCP_GCLOUD_COMPLETION = "${pkgs.google-cloud-sdk}/share/bash-completion/completions/gcloud";
+    GCP_TERMINALS = lib.concatStringsSep " " config.local.k8s.access.terminals;
   };
 
   wrapper = pkgs.writeShellApplication {
     name = "gcp";
-    runtimeInputs = wrapperTools ++ runTools;
+    runtimeInputs = wrapperTools ++ shellTools;
     text =
       lib.concatLines (lib.mapAttrsToList lib.strings.toShellVar settings)
       + builtins.readFile ../google-token.sh
+      + builtins.readFile ../terminal-holder.sh
       + builtins.readFile ./gcp.sh;
   };
 

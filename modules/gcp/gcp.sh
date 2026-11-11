@@ -1,6 +1,7 @@
 # gcp -- hardware-gated gcloud with an administrator's rights.
 #
 #   sudo gcp <gcloud arguments>     one gcloud command as the admin account
+#   sudo gcp shell                  a session as the admin account, for an hour
 #   sudo gcp grant ROLE [1h|forever] give your own account ROLE, for a while
 #   sudo gcp install <key.json>     encrypt that account's key, once
 #
@@ -20,6 +21,10 @@
 # directory, with HOME and CLOUDSDK_CONFIG there too: nothing it caches or
 # writes survives, and nothing of yours is read. The commands that exist to
 # print the token (auth, config) are refused.
+#
+# shell keeps that token for its whole hour and gives it a prompt: tmux and
+# bash as the same system account, so neither the token nor the session it is
+# typed into can be reached by anything running as you.
 
 set -euo pipefail
 
@@ -29,6 +34,10 @@ IDENTITY=${GCP_AGE_IDENTITY:-/etc/k8s/identity.txt}
 DIR=${GCP_DIR:-/etc/gcp}
 RUN_USER=${GCP_RUN_USER:-gcp-run}
 GRANT_JQ=${GCP_GRANT_JQ:-}
+SHELL_PATH=${GCP_SHELL_PATH:-$RUN_PATH}
+SHELL_BASH=${GCP_SHELL_BASH:-bash}
+GCLOUD_COMPLETION=${GCP_GCLOUD_COMPLETION:-}
+TERMINALS=${GCP_TERMINALS:-*kitty* *foot* *alacritty* *wezterm* *ghostty* xterm* st}
 KEY=$DIR/admin.gsa.age
 SETTINGS=$DIR/settings
 
@@ -40,12 +49,18 @@ die() {
 usage() {
   cat >&2 << 'EOF'
 usage: sudo gcp <gcloud arguments>
+       sudo gcp shell
        sudo gcp grant ROLE [DURATION | forever]
        sudo gcp install <service account key.json>
 
 Runs one gcloud command as the admin service account, after the token's PIN
 and a touch. The project comes from /etc/gcp/settings unless --project says
 otherwise.
+
+shell unlocks the key once and opens a session as the admin account until
+its access token expires, an hour later; closing it revokes the token. It
+refuses to start inside your own tmux, or in any terminal not named in
+local.k8s.access.terminals: whoever holds a terminal types into it.
 
   sudo gcp projects get-iam-policy PROJECT
   sudo gcp projects add-iam-policy-binding PROJECT \
@@ -136,8 +151,18 @@ export HOME="$work"
 # bounds it if Google is unreachable.
 # shellcheck disable=SC2329 # invoked by the EXIT trap
 cleanup() {
+  # The tmux server first: it outlives its client on a detach or a signal, and
+  # would otherwise stay behind as RUN_USER, holding the session open.
+  if [ -S "$work/run/tmux.sock" ]; then
+    setpriv --reuid="$RUN_USER" --regid="$RUN_USER" --init-groups \
+      env -i PATH="$SHELL_PATH" tmux -S "$work/run/tmux.sock" kill-server \
+      > /dev/null 2>&1 || true
+  fi
   if [ -s "$work/run/token" ]; then
-    { printf 'token='; cat -- "$work/run/token"; } \
+    # Read as RUN_USER, whose directory it is: a shell could have swapped the
+    # file for a symlink, and root's cat would send its target to Google.
+    { printf 'token='; setpriv --reuid="$RUN_USER" --regid="$RUN_USER" --init-groups \
+      cat -- "$work/run/token"; } \
       | curl -q -s --proto =https --max-time 10 --data-binary @- \
         https://oauth2.googleapis.com/revoke > /dev/null 2>&1 || true
   fi
@@ -216,6 +241,20 @@ for arg in "$@"; do
 done
 
 load_settings
+
+# Checked before the PIN is spent, like grant's arguments.
+if [ "$1" = shell ]; then
+  [ $# -eq 1 ] || usage
+  [ -t 0 ] || die "shell needs a terminal" 2
+  holder=$(terminal_holder)
+  if [ -n "$holder" ]; then
+    printf 'gcp: this terminal is held by "%s", running as you. Whoever holds a\n' "$holder" >&2
+    printf '     terminal types into it, so an admin session opened here would be\n' >&2
+    printf '     drivable by anything with your uid. Start it from a terminal\n' >&2
+    printf '     emulator, one named in local.k8s.access.terminals.\n' >&2
+    exit 2
+  fi
+fi
 
 # grant: a role for the everyday account, for a while, checked before the PIN
 # is spent. The limit is an IAM condition, so Google stops honouring the role
@@ -344,6 +383,91 @@ age -d -i "$IDENTITY" "$KEY" | google_access_token > "$work/run/token" \
 chown "$RUN_USER:$RUN_USER" "$work/run/token"
 chmod 0400 "$work/run/token"
 printf 'gcp: unlocked. Running gcloud as the admin account on %s.\n' "$project" >&2
+
+# ----------------------------------------------------------------- shell ---
+if [ "$1" = shell ]; then
+  # Issued a moment ago for an hour; a minute is left as margin.
+  expires=$(date -d '+59 min' +%H:%M)
+
+  # A bare tmux and a bare bash, as for k8s shell: an rc file of yours is
+  # executable code, and sharing it would let anything running as you run
+  # commands here. The colours are k8s shell's break-glass ones: this account
+  # is owner.
+  {
+    printf 'set -g default-terminal "tmux-256color"\n'
+    printf 'set -g history-limit 20000\n'
+    printf 'set -g mouse on\n'
+    printf 'set -g status-left-length 60\n'
+    printf 'set -g status-right-length 60\n'
+    printf 'set -g window-style "bg=#2b0b0b,fg=#ffd7af"\n'
+    printf 'set -g window-active-style "bg=#2b0b0b,fg=#ffd7af"\n'
+    printf 'set -g pane-border-style fg=#7f1d1d\n'
+    printf 'set -g pane-active-border-style fg=#ff3b3b\n'
+    printf 'set -g status-style bg=colour52,fg=colour223\n'
+    printf 'set -g status-left " GCP ADMIN  %s "\n' "$project"
+    printf 'set -g status-right " expires %s "\n' "$expires"
+    # runUser's login shell is nologin, which tmux would otherwise run.
+    printf 'set -g default-shell %s\n' "$SHELL_BASH"
+    printf 'set -g default-command "%s --rcfile %s/.bashrc -i"\n' "$SHELL_BASH" "$work/run"
+  } > "$work/run/tmux.conf"
+
+  {
+    # /etc/bashrc, read first, sources /etc/profile, which replaces PATH.
+    printf 'export PATH=%s\n' "$SHELL_PATH"
+    printf 'PS1="[admin@%s] \\w \\$ "\n' "$project"
+    if [ -n "$GCLOUD_COMPLETION" ]; then printf '. %s\n' "$GCLOUD_COMPLETION"; fi
+    # Not a boundary -- the token file is readable here, or gcloud could not
+    # use it -- but a printed token lands in scrollback, and this keeps it from
+    # getting there by habit.
+    cat << 'EOF'
+gcloud() {
+  local a
+  for a in "$@"; do
+    case $a in
+      auth | config | config-helper | print-access-token | print-identity-token)
+        printf 'gcp: refusing %s: it would print or keep the admin credential\n' "$a" >&2
+        return 2
+        ;;
+    esac
+  done
+  command gcloud "$@"
+}
+EOF
+  } > "$work/run/.bashrc"
+  chown "$RUN_USER:$RUN_USER" "$work/run/tmux.conf" "$work/run/.bashrc"
+
+  # As for k8s shell: env -i drops the terminfo search path, and kitty's entry
+  # lives in your profile, a root-owned store path.
+  term_dirs="/etc/profiles/per-user/$target_user/share/terminfo:/run/current-system/sw/share/terminfo"
+  term=${TERM:-xterm-256color}
+  [ -e "/etc/profiles/per-user/$target_user/share/terminfo/${term:0:1}/$term" ] \
+    || [ -e "/run/current-system/sw/share/terminfo/${term:0:1}/$term" ] \
+    || term=xterm-256color
+
+  printf 'gcp: session as the admin account on %s until %s, running as %s.\n' \
+    "$project" "$expires" "$RUN_USER" >&2
+  printf '     Closing it revokes the token.\n' >&2
+  # Not exec, so the trap kills the server and revokes the token.
+  (
+    cd "$work/run"
+    exec setpriv --reuid="$RUN_USER" --regid="$RUN_USER" --init-groups \
+      env -i \
+      HOME="$work/run" \
+      PATH="$SHELL_PATH" \
+      TERM="$term" \
+      TERMINFO_DIRS="$term_dirs" \
+      LANG="${LANG:-C.UTF-8}" \
+      LOCALE_ARCHIVE=/run/current-system/sw/lib/locale/locale-archive \
+      CLOUDSDK_CONFIG="$work/run/gcloud" \
+      CLOUDSDK_AUTH_ACCESS_TOKEN_FILE="$work/run/token" \
+      CLOUDSDK_CORE_PROJECT="$project" \
+      CLOUDSDK_CORE_LOG_HTTP_REDACT_TOKEN=true \
+      CLOUDSDK_COMPONENT_MANAGER_DISABLE_UPDATE_CHECK=1 \
+      tmux -f "$work/run/tmux.conf" -S "$work/run/tmux.sock" new-session -s gcp
+  ) || true
+  printf 'gcp: session closed\n' >&2
+  exit 0
+fi
 
 if [ -n "$grant_until" ]; then
   [ -r "$GRANT_JQ" ] || die "no grant filter at $GRANT_JQ"

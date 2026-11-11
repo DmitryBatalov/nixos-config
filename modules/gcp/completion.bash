@@ -64,7 +64,7 @@ _gcp() {
   done
   if [ "$COMP_CWORD" -eq 1 ]; then
     local w
-    for w in grant install; do
+    for w in grant install shell; do
       [[ $w == "$cur"* ]] && COMPREPLY+=("$w ")
     done
   fi
