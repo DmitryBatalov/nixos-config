@@ -171,6 +171,99 @@ load_accounts() {
   done
 }
 
+# Where a Google-key minter is presented: the apiserver's address and CA, which
+# a kubeconfig minter carries inside its ciphertext. Neither is a secret, so
+# they sit beside the key in the clear. Parsed and checked like accounts, since
+# both are interpolated into the kubeconfig the minting runs with.
+load_endpoint() {
+  local line key val
+  server='' ca_data=''
+  [ -r "$ENDPOINT_FILE" ] || die "cannot read $ENDPOINT_FILE"
+  while IFS= read -r line || [ -n "$line" ]; do
+    case $line in
+      '#'* | '') continue ;;
+      *=*) ;;
+      *) die "$ENDPOINT_FILE: not a key = value line: $line" ;;
+    esac
+    key=${line%%=*}
+    val=${line#*=}
+    key=${key//[[:space:]]/}
+    val=${val//[[:space:]]/}
+    case $key in
+      server) server=$val ;;
+      ca) ca_data=$val ;;
+      *) die "$ENDPOINT_FILE: unknown key '$key'" ;;
+    esac
+  done < "$ENDPOINT_FILE"
+  case $server in
+    https://*[!A-Za-z0-9.:/-]* | https://) die "$ENDPOINT_FILE: not a plausible server: $server" ;;
+    https://*) ;;
+    *) die "$ENDPOINT_FILE: server must be https://...: $server" ;;
+  esac
+  case $ca_data in
+    *[!A-Za-z0-9+/=]* | "") die "$ENDPOINT_FILE: ca must be base64 PEM data" ;;
+  esac
+  # Decoded now rather than left to kubectl, which would fail only after the
+  # PIN and the touch.
+  printf '%s' "$ca_data" | base64 -d 2> /dev/null | openssl x509 -noout 2> /dev/null \
+    || die "$ENDPOINT_FILE: ca does not decode to a certificate"
+}
+
+# A Google service account key, read on stdin, exchanged for an hour-long access
+# token that GKE accepts as that account; prints a kubeconfig carrying it. The
+# exchange is the OAuth JWT-bearer grant: sign a short assertion with the key,
+# post it, get a token back. Done by hand rather than through gcloud, which
+# would persist the account in a config directory and drag a Python runtime
+# into a closure that runs as root.
+#
+# Every secret travels through pipes and process substitutions fed by the
+# printf builtin, never through an external program's argv, where /proc would
+# show it to the user. The scope is identity only: the token proves who is
+# asking and is no use against any other Google API.
+gsa_kubeconfig() {
+  local key email kid now header claims jwt resp access
+  key=$(cat)
+  # Empty when age failed -- a wrong PIN, a missed touch. Its own message has
+  # already said why; a second one about the key would only mislead.
+  [ -n "$key" ] || exit 1
+  b64url() { base64 -w0 | tr '+/' '-_' | tr -d '='; }
+  email=$(printf '%s' "$key" | jq -r '.client_email // empty')
+  kid=$(printf '%s' "$key" | jq -r '.private_key_id // empty')
+  case $email in
+    *[!A-Za-z0-9.@-]* | "") die "the decrypted minter is not a service account key" ;;
+  esac
+  # Backdated a little: Google rejects an assertion issued in its future, and
+  # this clock may run ahead.
+  now=$(($(date +%s) - 30))
+  header=$(jq -nc --arg kid "$kid" '{alg: "RS256", typ: "JWT", kid: $kid}' | b64url)
+  claims=$(jq -nc --arg iss "$email" --argjson iat "$now" '{
+      iss: $iss,
+      scope: "https://www.googleapis.com/auth/userinfo.email",
+      aud: "https://oauth2.googleapis.com/token",
+      iat: $iat,
+      exp: ($iat + 300)}' | b64url)
+  jwt=$header.$claims.$(printf '%s.%s' "$header" "$claims" \
+    | openssl dgst -sha256 -binary \
+      -sign <(printf '%s' "$key" | jq -r '.private_key') \
+    | b64url)
+  unset key
+  resp=$(printf 'grant_type=urn%%3Aietf%%3Aparams%%3Aoauth%%3Agrant-type%%3Ajwt-bearer&assertion=%s' "$jwt" \
+    | curl -q -sS --proto =https --fail-with-body --max-time 30 \
+      -H 'Content-Type: application/x-www-form-urlencoded' \
+      --data-binary @- https://oauth2.googleapis.com/token) \
+    || die "Google refused the key: $(printf '%s' "$resp" | jq -r '.error_description // .error // empty' 2> /dev/null)"
+  access=$(printf '%s' "$resp" | jq -r '.access_token // empty')
+  case $access in
+    *[!A-Za-z0-9._-]* | "") die "Google returned no usable access token" ;;
+  esac
+  printf 'apiVersion: v1\nkind: Config\n'
+  printf 'clusters:\n- name: cluster\n  cluster:\n    server: %s\n    certificate-authority-data: %s\n' \
+    "$server" "$ca_data"
+  printf 'users:\n- name: minter\n  user:\n    token: %s\n' "$access"
+  printf 'contexts:\n- name: minter\n  context: {cluster: cluster, user: minter}\n'
+  printf 'current-context: minter\n'
+}
+
 # Which process holds the master end of our controlling terminal. That is part
 # of the wiring rather than something a program claims about itself: a terminal
 # multiplexer necessarily holds the master of every pane it draws, and no shell
@@ -315,9 +408,9 @@ fi
 # $CLUSTERS_DIR is root-only, so the names are listed under sudo and not before.
 known_clusters() {
   local c known=
-  for c in "$CLUSTERS_DIR"/*/minter.conf.age; do
-    [ -e "$c" ] || continue
-    c=${c%/minter.conf.age}
+  for c in "$CLUSTERS_DIR"/*/; do
+    c=${c%/}
+    [ -e "$c/minter.conf.age" ] || [ -e "$c/minter.gsa.age" ] || continue
     known="$known ${c##*/}"
   done
   printf '%s' "${known:+, one of:$known}"
@@ -329,6 +422,8 @@ resolve_cluster() {
   esac
   local dir=$CLUSTERS_DIR/$CLUSTER
   CIPHER=$dir/minter.conf.age
+  GSA_CIPHER=$dir/minter.gsa.age
+  ENDPOINT_FILE=$dir/endpoint
   ACCOUNTS_FILE=$dir/accounts
   # A cluster may bring its own identity -- install-credential.sh writes one
   # into the directory it is given -- or share the machine's.
@@ -494,8 +589,21 @@ case $profile in
   *) die "unknown profile" 2 ;;
 esac
 
+# Two kinds of minter, told apart by file name. minter.conf.age is a kubeconfig
+# for a minting ServiceAccount. minter.gsa.age is a Google service account key,
+# for GKE, which caps every ServiceAccount token at 48 hours and so cannot hold a
+# long-lived one; the key is traded for a Google access token at each unlock,
+# and RBAC gives that Google account the same single verb.
+minter_kind=kubeconfig
+if [ -e "$GSA_CIPHER" ]; then
+  [ ! -e "$CIPHER" ] || die "$CLUSTER has both minter.conf.age and minter.gsa.age; keep one"
+  minter_kind=gsa
+  CIPHER=$GSA_CIPHER
+fi
+
 # A mistyped name is told apart from an unreadable credential.
 [ -e "$CIPHER" ] || die "no such cluster: $CLUSTER$(known_clusters)" 2
+if [ "$minter_kind" = gsa ]; then load_endpoint; fi
 for f in "$CIPHER" "$IDENTITY"; do
   [ -r "$f" ] || die "cannot read $f"
 done
@@ -544,10 +652,14 @@ trap 'exit 143' TERM
 # The first line is also the only confirmation of the touch sudo asked for:
 # pam_u2f prints nothing on success, and the PIN/touch request that follows
 # reads like a retry unless it says it is a second, separate one.
-printf 'k8s: sudo accepted the touch. Unlocking the minter kubeconfig takes the PIN\n' >&2
-printf '     and a touch once more. The plugin overwrites its own prompt line, so\n' >&2
+printf 'k8s: sudo accepted the touch. Unlocking the minter takes the PIN and\n' >&2
+printf '     a touch once more. The plugin overwrites its own prompt line, so\n' >&2
 printf '     this PIN request can look like a blank line. Type it anyway.\n' >&2
-minter=$(age -d -i "$IDENTITY" "$CIPHER")
+if [ "$minter_kind" = gsa ]; then
+  minter=$(age -d -i "$IDENTITY" "$CIPHER" | gsa_kubeconfig)
+else
+  minter=$(age -d -i "$IDENTITY" "$CIPHER")
+fi
 
 # age exits silently once the token is touched, and the two cluster calls
 # below can take seconds. Without a line here a registered touch and a missed

@@ -33,6 +33,8 @@
     age-plugin-fido2-hmac
     jq
     kubectl
+    curl # a Google-key minter is traded for an access token
+    openssl # which takes signing a JWT with that key
     tmux
     bash
     coreutils
@@ -124,11 +126,15 @@ in {
         required: there is no default cluster, so production is never reached
         by leaving something out.
 
-          NAME/minter.conf.age   that cluster's minter kubeconfig
+          NAME/minter.conf.age   that cluster's minter kubeconfig, or
+          NAME/minter.gsa.age    a Google service account key, for GKE,
+          NAME/endpoint          with the server and CA it is presented to
           NAME/accounts          optional; its namespace and account names
           NAME/identity.txt      optional; identityFile is used without it
 
-        `k8s-access/install-credential.sh <kubeconfig> <ctx> <dir>` fills one in.
+        `k8s-access/install-credential.sh <name> <kubeconfig | Google key JSON> <ctx>`
+        fills one in; for a Google key the context is required, as the endpoint
+        is read from it.
 
         Moving from the single-cluster layout: nothing reads
         /etc/k8s/minter.conf.age or /etc/k8s/accounts any more, nor keeps their
@@ -149,6 +155,18 @@ in {
         inert. Treat it as a locked admin credential, not a low-value one. The
         wrapper renders the session with --minify, so the kubeconfig's own
         current-context decides which cluster it reaches.
+
+        minter.gsa.age takes its place on GKE, which caps ServiceAccount tokens
+        at 48 hours. It is a Google service account's JSON key, encrypted the
+        same way; each unlock trades it for an hour-long access token, and an
+        RBAC binding gives that Google account the minter's one verb. Its only
+        IAM role is roles/container.clusterViewer, which lets it see the
+        cluster. The key does not expire unless the organisation sets a policy,
+        so delete it in GCP to revoke. endpoint says where to present the token,
+        `key = value`, root-owned and 0400:
+
+          server = https://203.0.113.10
+          ca     = LS0tLS1CRUdJTi...   (certificate-authority-data, base64)
 
         accounts names the namespace and the two ServiceAccounts, read at run
         time and overriding the three options below. Those names are deployment
@@ -391,6 +409,8 @@ in {
         # `z` takes globs and skips what does not exist
         "z ${cfg.clustersDir}/* 0700 root root -"
         "z ${cfg.clustersDir}/*/minter.conf.age 0400 root root -"
+        "z ${cfg.clustersDir}/*/minter.gsa.age 0400 root root -"
+        "z ${cfg.clustersDir}/*/endpoint 0400 root root -"
         "z ${cfg.clustersDir}/*/identity.txt 0400 root root -"
         "z ${cfg.clustersDir}/*/accounts 0400 root root -"
       ];
