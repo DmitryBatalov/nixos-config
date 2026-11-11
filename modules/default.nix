@@ -16,6 +16,7 @@
     ./desktop/fonts.nix
     ./desktop/sway.nix
 
+    ./gcp/access.nix
     ./k8s/access.nix
 
     ./hardware/bluetooth.nix

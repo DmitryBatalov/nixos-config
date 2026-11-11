@@ -71,6 +71,10 @@
       ];
     };
 
+    # Google Cloud administration behind the same token: `sudo gcp <gcloud
+    # args>`. The key and the project live in /etc/gcp, outside this repository.
+    gcp.access.enable = true;
+
     hardware = {
       bluetooth.enable = true;
       fido2.enable = true;

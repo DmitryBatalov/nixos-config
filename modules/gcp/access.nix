@@ -17,11 +17,12 @@
     coreutils
     gnugrep
     diffutils # cmp, for the install round trip
+    util-linux # setpriv, to drop to runUser
   ];
 
-  # gcloud alone. The token it runs with is the admin's, so nothing else is on
-  # its PATH.
-  runTools = [pkgs.google-cloud-sdk];
+  # gcloud, and the coreutils its launcher script calls (dirname, realpath).
+  # The token it runs with is the admin's, so nothing else is on its PATH.
+  runTools = [pkgs.google-cloud-sdk pkgs.coreutils];
 
   settings = {
     # /run/wrappers/bin for the setuid sudo that drops to the user; the
@@ -30,6 +31,7 @@
     GCP_RUN_PATH = lib.makeBinPath runTools;
     GCP_AGE_IDENTITY = cfg.identityFile;
     GCP_DIR = cfg.dir;
+    GCP_RUN_USER = cfg.runUser;
   };
 
   wrapper = pkgs.writeShellApplication {
@@ -77,20 +79,51 @@ in {
         revoke it by deleting the key in GCP.
       '';
     };
+
+    runUser = lib.mkOption {
+      type = lib.types.str;
+      default = "gcp-run";
+      description = ''
+        System account gcloud runs as. Not root: nothing gcloud does needs it,
+        only the token is privileged, and as root every path on its command
+        line -- an output file, --flags-file, a directory to upload -- would be
+        opened with root's rights in a directory the user controls.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
+    # secure_path lives in the k8s module. Without it sudo resolves `gcp`
+    # through the caller's PATH, and a planted one collects the touch.
+    assertions = [
+      {
+        assertion = config.local.k8s.access.enable;
+        message = "local.gcp.access needs local.k8s.access, which sets sudo's secure_path";
+      }
+    ];
+
     environment.systemPackages = [wrapper];
+
+    users.groups.${cfg.runUser} = {};
+    users.users.${cfg.runUser} = {
+      isSystemUser = true;
+      group = cfg.runUser;
+      description = "Runs gcloud for sudo gcp";
+      home = "/var/empty";
+      createHome = false;
+    };
 
     systemd.tmpfiles.rules = [
       "d ${cfg.dir} 0700 root root -"
       "z ${cfg.dir}/admin.gsa.age 0400 root root -"
       "z ${cfg.dir}/settings 0400 root root -"
+      # A SIGKILL skips the trap and would leave a token -- or, mid-install, the
+      # plaintext key -- in /run until reboot.
+      "e /run/gcp.* - - - 1h"
     ];
 
-    # As for k8s: secure_path (set by the k8s module) keeps sudo from resolving
-    # `gcp` through the caller's PATH, and no cached ticket lets an unattended
-    # process call it with only the touch left to wait for.
+    # As for k8s: no cached ticket lets an unattended process call it with only
+    # the touch left to wait for.
     security.sudo.extraConfig = ''
       Cmnd_Alias GCP_ACCESS = /run/current-system/sw/bin/gcp, /nix/store/*/bin/gcp
       Defaults!GCP_ACCESS timestamp_timeout=0
