@@ -20,9 +20,10 @@
     util-linux # setpriv, to drop to runUser
   ];
 
-  # gcloud, and the coreutils its launcher script calls (dirname, realpath).
-  # The token it runs with is the admin's, so nothing else is on its PATH.
-  runTools = [pkgs.google-cloud-sdk pkgs.coreutils];
+  # gcloud, and the coreutils its launcher script calls (dirname, realpath);
+  # bash and jq for the policy rewrite of a timed grant. The token it runs
+  # with is the admin's, so nothing else is on its PATH.
+  runTools = with pkgs; [google-cloud-sdk coreutils bash jq];
 
   settings = {
     # /run/wrappers/bin for the setuid sudo that drops to the user; the
@@ -32,6 +33,7 @@
     GCP_AGE_IDENTITY = cfg.identityFile;
     GCP_DIR = cfg.dir;
     GCP_RUN_USER = cfg.runUser;
+    GCP_GRANT_JQ = "${./grant.jq}";
   };
 
   wrapper = pkgs.writeShellApplication {
@@ -41,6 +43,17 @@
       lib.concatLines (lib.mapAttrsToList lib.strings.toShellVar settings)
       + builtins.readFile ../google-token.sh
       + builtins.readFile ./gcp.sh;
+  };
+
+  # `gcp <Tab>`, and `sudo gcp <Tab>` through bash-completion's sudo handling.
+  completion = pkgs.runCommand "gcp-completion" {} ''
+    install -Dm644 ${pkgs.replaceVars ./completion.bash {gcloud = pkgs.google-cloud-sdk;}} \
+      $out/share/bash-completion/completions/gcp
+  '';
+
+  package = pkgs.symlinkJoin {
+    name = "gcp";
+    paths = [wrapper completion];
   };
 in {
   options.local.gcp.access = {
@@ -102,7 +115,7 @@ in {
       }
     ];
 
-    environment.systemPackages = [wrapper];
+    environment.systemPackages = [package];
 
     users.groups.${cfg.runUser} = {};
     users.users.${cfg.runUser} = {

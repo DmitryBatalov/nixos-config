@@ -1,6 +1,7 @@
 # gcp -- hardware-gated gcloud with an administrator's rights.
 #
 #   sudo gcp <gcloud arguments>     one gcloud command as the admin account
+#   sudo gcp grant ROLE [1h|forever] give your own account ROLE, for a while
 #   sudo gcp install <key.json>     encrypt that account's key, once
 #
 # Your own Google account keeps only what everyday work needs -- reading logs
@@ -27,6 +28,7 @@ RUN_PATH=${GCP_RUN_PATH:-$PATH}
 IDENTITY=${GCP_AGE_IDENTITY:-/etc/k8s/identity.txt}
 DIR=${GCP_DIR:-/etc/gcp}
 RUN_USER=${GCP_RUN_USER:-gcp-run}
+GRANT_JQ=${GCP_GRANT_JQ:-}
 KEY=$DIR/admin.gsa.age
 SETTINGS=$DIR/settings
 
@@ -38,6 +40,7 @@ die() {
 usage() {
   cat >&2 << 'EOF'
 usage: sudo gcp <gcloud arguments>
+       sudo gcp grant ROLE [DURATION | forever]
        sudo gcp install <service account key.json>
 
 Runs one gcloud command as the admin service account, after the token's PIN
@@ -49,8 +52,19 @@ otherwise.
     --member user:you@example.com --role roles/container.admin \
     --condition='expression=request.time < timestamp("2030-01-01T12:00:00Z"),title=temporary'
 
-Basic roles (owner, editor, viewer) cannot carry a condition: granted, they
-stay until removed.
+grant gives ROLE to the account named by `user = ...` in /etc/gcp/settings,
+for DURATION (30m, 1h -- the default --, 8h, 1d; at most 24h), after which
+Google stops honouring it on its own. `forever` grants it without a limit.
+
+  sudo gcp grant errorreporting.viewer
+  sudo gcp grant compute.admin 30m
+  sudo gcp grant cloudsql.viewer forever
+
+The limit bounds honest use, not a compromise: a thief holding your session
+inside the window could make the access outlast it. So grant refuses owner,
+editor and the IAM, key and impersonation roles; grant those, if ever, with
+an explicit add-iam-policy-binding. roles/viewer cannot expire and needs
+`forever`.
 EOF
   exit "${1:-2}"
 }
@@ -68,12 +82,13 @@ recipient_of() {
   grep 'public key' "$1" | grep -oP 'age1.*' | head -1
 }
 
-# The project is deployment state -- it names a customer -- so it lives beside
+# The project is deployment state -- it names a customer -- and user, the
+# everyday account grant gives roles to, names a person; both live beside
 # the key, root-owned, rather than in this public repository. Parsed, not
-# sourced, and checked: it reaches gcloud's environment.
+# sourced, and checked: both reach gcloud's arguments or environment.
 load_settings() {
   local line key val
-  project=''
+  project='' user=''
   [ -r "$SETTINGS" ] || die "cannot read $SETTINGS; run sudo gcp install first"
   while IFS= read -r line || [ -n "$line" ]; do
     case $line in
@@ -87,6 +102,7 @@ load_settings() {
     val=${val//[[:space:]]/}
     case $key in
       project) project=$val ;;
+      user) user=$val ;;
       *) die "$SETTINGS: unknown key '$key'" ;;
     esac
   done < "$SETTINGS"
@@ -96,6 +112,12 @@ load_settings() {
   esac
   case $project in
     *[!a-z0-9-]*) die "$SETTINGS: not a project id: $project" ;;
+  esac
+  case $user in
+    "") ;;
+    *[!A-Za-z0-9.@_+-]* | *@*@* | @* | *@) die "$SETTINGS: not an account: $user" ;;
+    ?*@?*.?*) ;;
+    *) die "$SETTINGS: not an account: $user" ;;
   esac
 }
 
@@ -163,6 +185,10 @@ if [ "$1" = install ]; then
 
   install -d -m 0700 -o root -g root "$DIR"
   printf '# read by the gcp wrapper\nproject = %s\n' "$key_project" > "$work/settings"
+  # A re-install keeps the account grant gives roles to -- parsed and checked
+  # like any other read of the file, not copied as written.
+  old_user=$( (load_settings > /dev/null 2>&1 && printf '%s' "$user") || true)
+  if [ -n "$old_user" ]; then printf 'user = %s\n' "$old_user" >> "$work/settings"; fi
   # The key first: a crash between the two then leaves a new key with the old
   # project at worst, never a project with no key.
   install -m 0400 -o root -g root "$work/admin.gsa.age" "$KEY"
@@ -188,6 +214,78 @@ for arg in "$@"; do
 done
 
 load_settings
+
+# grant: a role for the everyday account, for a while, checked before the PIN
+# is spent. The limit is an IAM condition, so Google stops honouring the role
+# by itself -- nothing here has to be around to take it back.
+#
+# The limit bounds honest use, not a compromise: the account receiving the
+# role is the one whose token and browser session can be stolen, and a thief
+# holding it inside the window can make the access outlast it. So grant
+# refuses the roles that do that directly -- IAM administration, keys and
+# impersonation of service accounts, owner and editor. Granting one of those
+# is still possible, as an explicit add-iam-policy-binding. compute.admin and
+# container.admin can borrow a workload's service account, and are allowed;
+# keep them short.
+grant_until=
+if [ "$1" = grant ]; then
+  [ $# -ge 2 ] && [ $# -le 3 ] || usage
+  [ -n "$user" ] || die "no account to grant to; add 'user = you@example.com' to $SETTINGS" 2
+  role=${2#roles/}
+  case $role in
+    *[!A-Za-z0-9._]* | "") die "not a predefined role: $2" 2 ;;
+  esac
+  case $role in
+    owner | editor | resourcemanager.* | *.securityAdmin | iam.*Admin \
+      | iam.serviceAccountTokenCreator | iam.serviceAccountOpenIdTokenCreator \
+      | iam.serviceAccountUser | iam.workloadIdentityUser)
+      die "roles/$role would let the account keep access past any limit; grant it with add-iam-policy-binding if you must" 2
+      ;;
+  esac
+  duration=${3:-1h}
+  case $role:$duration in
+    viewer:forever) ;;
+    viewer:*) die "roles/viewer is a basic role and cannot expire; say 'forever' if you mean it" 2 ;;
+  esac
+  case $duration in
+    forever)
+      printf 'gcp: granting roles/%s to %s with no time limit\n' "$role" "$user" >&2
+      set -- projects add-iam-policy-binding "$project" \
+        --member "user:$user" --role "roles/$role" --condition=None --format=none
+      ;;
+    [1-9]*[mhd] | [1-9][mhd])
+      n=${duration%?}
+      case $n in *[!0-9]*) die "not a duration: $duration (30m, 1h, 8h, 1d, forever)" 2 ;; esac
+      # Bounded before the arithmetic: a long enough number wraps negative and
+      # would pass the 24h check as a grant that expired yesterday.
+      [ ${#n} -le 5 ] || die "at most 24h; for longer, say 'forever' and remove it yourself" 2
+      case $duration in
+        *m) secs=$((n * 60)) ;;
+        *h) secs=$((n * 3600)) ;;
+        *d) secs=$((n * 86400)) ;;
+      esac
+      [ "$secs" -le 86400 ] || die "at most 24h; for longer, say 'forever' and remove it yourself" 2
+      grant_until=$(date -u -d "@$(($(date +%s) + secs))" +%Y-%m-%dT%H:%M:%SZ)
+      printf 'gcp: granting roles/%s to %s until %s\n' "$role" "$user" "$grant_until" >&2
+      ;;
+    *) die "not a duration: $duration (30m, 1h, 8h, 1d, forever)" 2 ;;
+  esac
+fi
+
+# A timed grant is one read-modify-write of the policy rather than
+# add-iam-policy-binding: IAM caps the bindings one role and member may have,
+# so expired grants would pile up until grant stopped working. Every expired
+# binding grant itself made -- its title says so -- is dropped in the same
+# write, and the etag from the read makes a concurrent change fail rather than
+# be overwritten. Every argument is the wrapper's; none is the caller's.
+# shellcheck disable=SC2016 # expanded by the inner bash, not here
+grant_script='
+gcloud projects get-iam-policy "$1" --format=json > policy.json
+jq --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg member "user:$2" \
+  --arg role "roles/$3" --arg until "$4" -f "$5" policy.json > new.json
+gcloud projects set-iam-policy "$1" new.json --format=none
+'
+
 [ -r "$KEY" ] || die "cannot read $KEY; run sudo gcp install first"
 id -u "$RUN_USER" > /dev/null 2>&1 || die "no such account: $RUN_USER"
 
@@ -212,6 +310,14 @@ chown "$RUN_USER:$RUN_USER" "$work/run/token"
 chmod 0400 "$work/run/token"
 printf 'gcp: unlocked. Running gcloud as the admin account on %s.\n' "$project" >&2
 
+if [ -n "$grant_until" ]; then
+  [ -r "$GRANT_JQ" ] || die "no grant filter at $GRANT_JQ"
+  set -- bash -euo pipefail -c "$grant_script" grant \
+    "$project" "$user" "$role" "$grant_until" "$GRANT_JQ"
+else
+  set -- gcloud "$@"
+fi
+
 # A bare environment: gcloud sees the token, a fresh config directory and the
 # project, and nothing of the caller's. Not exec, so the trap revokes the token.
 status=0
@@ -227,6 +333,6 @@ status=0
     CLOUDSDK_AUTH_ACCESS_TOKEN_FILE="$work/run/token" \
     CLOUDSDK_CORE_PROJECT="$project" \
     CLOUDSDK_CORE_LOG_HTTP_REDACT_TOKEN=true \
-    gcloud "$@"
+    "$@"
 ) || status=$?
 exit "$status"
