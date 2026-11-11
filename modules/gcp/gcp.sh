@@ -434,7 +434,18 @@ gcloud() {
 }
 EOF
   } > "$work/run/.bashrc"
-  chown "$RUN_USER:$RUN_USER" "$work/run/tmux.conf" "$work/run/.bashrc"
+
+  # The token's public recipient, so what gcloud hands out -- a new key -- can
+  # be encrypted before it is ever kept in the clear: age -R ~/recipient.txt.
+  # Encrypting needs no touch; decrypting needs the token, which this session
+  # cannot open.
+  recipient=$(recipient_of "$IDENTITY")
+  case $recipient in
+    age1*) printf '%s\n' "$recipient" > "$work/run/recipient.txt" ;;
+    *) die "no recipient in $IDENTITY" ;;
+  esac
+  chown "$RUN_USER:$RUN_USER" "$work/run/tmux.conf" "$work/run/.bashrc" \
+    "$work/run/recipient.txt"
 
   # As for k8s shell: env -i drops the terminfo search path, and kitty's entry
   # lives in your profile, a root-owned store path.
@@ -446,7 +457,8 @@ EOF
 
   printf 'gcp: session as the admin account on %s until %s, running as %s.\n' \
     "$project" "$expires" "$RUN_USER" >&2
-  printf '     Closing it revokes the token.\n' >&2
+  printf '     Closing it revokes the token. Encrypt to the token with\n' >&2
+  printf '     age -R ~/recipient.txt.\n' >&2
   # Not exec, so the trap kills the server and revokes the token.
   (
     cd "$work/run"
