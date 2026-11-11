@@ -64,9 +64,9 @@ The limit bounds honest use, not a compromise: a thief holding your session
 inside the window could make the access outlast it. So grant refuses owner,
 editor and the IAM, key and impersonation roles; grant those, if ever, with
 an explicit add-iam-policy-binding. Roles that reach the cluster or what it
-runs -- container and compute admin, Artifact Registry writes -- are granted
-for at most 1h, after you type the role name back. roles/viewer cannot
-expire and needs `forever`.
+runs -- container and compute admin, Artifact Registry writes, bucket and
+secret reads -- are granted for at most 1h, after you type the role name
+back. roles/viewer cannot expire and needs `forever`.
 EOF
   exit "${1:-2}"
 }
@@ -232,8 +232,9 @@ load_settings
 # allowed, but only briefly and only after the role is typed back: write
 # access to GKE is what `sudo k8s --breakglass` exists to gate, and a
 # browser's Cloud Shell would use it as the everyday account; compute.admin
-# and instanceAdmin reach a node and its service account; and writing to
-# Artifact Registry is writing what production will run. Typing the name
+# and instanceAdmin reach a node and its service account; writing to
+# Artifact Registry is writing what production will run; and reading buckets
+# or Secret Manager reads Terraform state and secrets, credentials included. Typing the name
 # guards against a command accepted without reading it, not against theft:
 # that is what the one-hour ceiling is for.
 grant_until=
@@ -259,6 +260,10 @@ if [ "$1" = grant ]; then
       risky="reaches the cluster's nodes and the service account they run as" ;;
     artifactregistry.writer | artifactregistry.repoAdmin | artifactregistry.admin)
       risky="can replace the images production runs" ;;
+    storage.objectViewer | storage.objectAdmin | storage.admin)
+      risky="reads every bucket, Terraform state and its secrets among them" ;;
+    secretmanager.secretAccessor | secretmanager.admin)
+      risky="reads the secret values production runs with" ;;
   esac
   duration=${3:-1h}
   case $role:$duration in

@@ -19,6 +19,7 @@ _gcp_roles='
   container.clusterViewer container.developer container.admin cloudsql.viewer
   cloudsql.client cloudsql.admin artifactregistry.reader artifactregistry.writer
   storage.objectViewer storage.objectAdmin storage.admin secretmanager.viewer
+  secretmanager.secretAccessor
   iam.serviceAccountViewer iam.securityReviewer browser viewer'
 
 _gcp() {
