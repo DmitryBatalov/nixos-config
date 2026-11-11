@@ -39,6 +39,7 @@
     bash
     coreutils
     gnugrep
+    findutils # xargs, for the terminal check
     gnused
     getent # a package of its own; glibc.bin does not carry it
   ];
