@@ -209,57 +209,14 @@ load_endpoint() {
     || die "$ENDPOINT_FILE: ca does not decode to a certificate"
 }
 
-# A Google service account key, read on stdin, exchanged for an hour-long access
-# token that GKE accepts as that account; prints a kubeconfig carrying it. The
-# exchange is the OAuth JWT-bearer grant: sign a short assertion with the key,
-# post it, get a token back. Done by hand rather than through gcloud, which
-# would persist the account in a config directory and drag a Python runtime
-# into a closure that runs as root.
-#
-# Every secret travels through pipes and process substitutions fed by the
-# printf builtin, never through an external program's argv, where /proc would
-# show it to the user. Both scopes, as gke-gcloud-auth-plugin asks: GKE
-# answers a userinfo.email-only token with 401, and without userinfo.email
-# names the account by its numeric id, which no RBAC binding by email matches.
-# The token can then reach any Google API, but only as far as the account's
-# IAM roles go -- which is why that account must hold container.clusterViewer
-# and nothing else.
+# A Google service account key, read on stdin, traded for an access token that
+# GKE accepts as that account (google_access_token, from google-token.sh);
+# prints a kubeconfig carrying it. That account must hold
+# container.clusterViewer in IAM and nothing else: the token reaches any Google
+# API its roles allow.
 gsa_kubeconfig() {
-  local key email kid now header claims jwt resp access
-  key=$(cat)
-  # Empty when age failed -- a wrong PIN, a missed touch. Its own message has
-  # already said why; a second one about the key would only mislead.
-  [ -n "$key" ] || exit 1
-  b64url() { base64 -w0 | tr '+/' '-_' | tr -d '='; }
-  email=$(printf '%s' "$key" | jq -r '.client_email // empty')
-  kid=$(printf '%s' "$key" | jq -r '.private_key_id // empty')
-  case $email in
-    *[!A-Za-z0-9.@-]* | "") die "the decrypted minter is not a service account key" ;;
-  esac
-  # Backdated a little: Google rejects an assertion issued in its future, and
-  # this clock may run ahead.
-  now=$(($(date +%s) - 30))
-  header=$(jq -nc --arg kid "$kid" '{alg: "RS256", typ: "JWT", kid: $kid}' | b64url)
-  claims=$(jq -nc --arg iss "$email" --argjson iat "$now" '{
-      iss: $iss,
-      scope: "https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/userinfo.email",
-      aud: "https://oauth2.googleapis.com/token",
-      iat: $iat,
-      exp: ($iat + 300)}' | b64url)
-  jwt=$header.$claims.$(printf '%s.%s' "$header" "$claims" \
-    | openssl dgst -sha256 -binary \
-      -sign <(printf '%s' "$key" | jq -r '.private_key') \
-    | b64url)
-  unset key
-  resp=$(printf 'grant_type=urn%%3Aietf%%3Aparams%%3Aoauth%%3Agrant-type%%3Ajwt-bearer&assertion=%s' "$jwt" \
-    | curl -q -sS --proto =https --fail-with-body --max-time 30 \
-      -H 'Content-Type: application/x-www-form-urlencoded' \
-      --data-binary @- https://oauth2.googleapis.com/token) \
-    || die "Google refused the key: $(printf '%s' "$resp" | jq -r '.error_description // .error // empty' 2> /dev/null)"
-  access=$(printf '%s' "$resp" | jq -r '.access_token // empty')
-  case $access in
-    *[!A-Za-z0-9._-]* | "") die "Google returned no usable access token" ;;
-  esac
+  local access
+  access=$(google_access_token) || exit 1 # its die ends only that subshell
   printf 'apiVersion: v1\nkind: Config\n'
   printf 'clusters:\n- name: cluster\n  cluster:\n    server: %s\n    certificate-authority-data: %s\n' \
     "$server" "$ca_data"
