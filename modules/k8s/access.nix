@@ -98,6 +98,7 @@
     text =
       lib.concatLines (lib.mapAttrsToList lib.strings.toShellVar settings)
       + builtins.readFile ../google-token.sh
+      + builtins.readFile ../terminal-holder.sh
       + builtins.readFile ./k8s.sh;
   };
 
