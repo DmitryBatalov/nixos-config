@@ -159,9 +159,11 @@ in {
         minter.gsa.age takes its place on GKE, which caps ServiceAccount tokens
         at 48 hours. It is a Google service account's JSON key, encrypted the
         same way; each unlock trades it for an hour-long access token, and an
-        RBAC binding gives that Google account the minter's one verb. Its only
-        IAM role is roles/container.clusterViewer, which lets it see the
-        cluster. The key does not expire unless the organisation sets a policy,
+        RBAC binding gives that Google account the minter's one verb. The token
+        is scoped cloud-platform, as GKE refuses a narrower one, so the account's
+        IAM roles are its whole reach outside the cluster: keep them to
+        roles/container.clusterViewer, which only lets it see the cluster. Add
+        a role and every unlock carries it. The key does not expire unless the organisation sets a policy,
         so delete it in GCP to revoke. endpoint says where to present the token,
         `key = value`, root-owned and 0400:
 

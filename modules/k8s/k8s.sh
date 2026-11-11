@@ -218,8 +218,12 @@ load_endpoint() {
 #
 # Every secret travels through pipes and process substitutions fed by the
 # printf builtin, never through an external program's argv, where /proc would
-# show it to the user. The scope is identity only: the token proves who is
-# asking and is no use against any other Google API.
+# show it to the user. Both scopes, as gke-gcloud-auth-plugin asks: GKE
+# answers a userinfo.email-only token with 401, and without userinfo.email
+# names the account by its numeric id, which no RBAC binding by email matches.
+# The token can then reach any Google API, but only as far as the account's
+# IAM roles go -- which is why that account must hold container.clusterViewer
+# and nothing else.
 gsa_kubeconfig() {
   local key email kid now header claims jwt resp access
   key=$(cat)
@@ -238,7 +242,7 @@ gsa_kubeconfig() {
   header=$(jq -nc --arg kid "$kid" '{alg: "RS256", typ: "JWT", kid: $kid}' | b64url)
   claims=$(jq -nc --arg iss "$email" --argjson iat "$now" '{
       iss: $iss,
-      scope: "https://www.googleapis.com/auth/userinfo.email",
+      scope: "https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/userinfo.email",
       aud: "https://oauth2.googleapis.com/token",
       iat: $iat,
       exp: ($iat + 300)}' | b64url)
