@@ -178,7 +178,7 @@ in {
         relative to the user's home. Deliberately NOT ~/.kube/config: gcloud
         owns that file for the GKE contexts, and overwriting it would delete
         them. A directory of their own, so that KUBECONFIG can glob it and a
-        viewer such as Freelens can watch it whole without picking up anything
+        kubeconfig viewer can watch it whole without picking up anything
         else under ~/.kube. Append each file in it to KUBECONFIG after
         ~/.kube/config, which then keeps deciding current-context.
       '';

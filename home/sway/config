@@ -234,7 +234,6 @@ assign [class="chromium"] $ws2
 assign [app_id="org.gnome.Nautilus"] $ws4
 assign [class="TelegramDesktop"] $ws5
 assign [class="(?i)obsidian"] $ws8
-assign [class="Freelens"] $ws9
 
 # app_id matchers for Wayland-native apps
 assign [app_id="firefox"] $ws2
@@ -254,7 +253,6 @@ for_window [class=(?i)firefox] focus
 for_window [app_id="org.gnome.Nautilus"] focus
 for_window [class=Thunderbird] focus
 for_window [class=TelegramDesktop] focus
-for_window [class=Freelens] focus
 for_window [class=(?i)obsidian] focus
 
 for_window [app_id="firefox"] focus
