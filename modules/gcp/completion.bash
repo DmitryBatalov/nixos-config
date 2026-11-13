@@ -34,6 +34,18 @@ _gcp() {
       COMPREPLY=("${COMPREPLY[@]/%/ }")
       return
       ;;
+    token)
+      case $COMP_CWORD in
+        2) mapfile -t COMPREPLY < <(compgen -W 'logs' -- "$cur") ;;
+        3) mapfile -t COMPREPLY < <(compgen -W '15m 30m 1h' -- "$cur") ;;
+      esac
+      COMPREPLY=("${COMPREPLY[@]/%/ }")
+      return
+      ;;
+    logs)
+      # `gcp logs X` is `gcloud logging X`: completed as that line.
+      local COMP_LINE=${COMP_LINE/logs/logging} COMP_POINT=$((COMP_POINT + 3))
+      ;;
     install)
       if [ "$COMP_CWORD" -eq 2 ]; then
         compopt -o filenames +o nospace 2> /dev/null
@@ -64,7 +76,7 @@ _gcp() {
   done
   if [ "$COMP_CWORD" -eq 1 ]; then
     local w
-    for w in grant install shell; do
+    for w in grant install shell token logs; do
       [[ $w == "$cur"* ]] && COMPREPLY+=("$w ")
     done
   fi

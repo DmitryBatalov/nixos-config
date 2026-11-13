@@ -36,6 +36,7 @@ RUN_USER=${GCP_RUN_USER:-gcp-run}
 GRANT_JQ=${GCP_GRANT_JQ:-}
 SHELL_PATH=${GCP_SHELL_PATH:-$RUN_PATH}
 SHELL_BASH=${GCP_SHELL_BASH:-bash}
+LOGS_ACCOUNT=${GCP_LOGS_ACCOUNT:-logs-reader}
 GCLOUD_COMPLETION=${GCP_GCLOUD_COMPLETION:-}
 TERMINALS=${GCP_TERMINALS:-*kitty* *foot* *alacritty* *wezterm* *ghostty* xterm* st}
 KEY=$DIR/admin.gsa.age
@@ -51,6 +52,8 @@ usage() {
 usage: sudo gcp <gcloud arguments>
        sudo gcp shell
        sudo gcp grant ROLE [DURATION | forever]
+       sudo gcp token logs [DURATION]
+            gcp logs <gcloud logging arguments>
        sudo gcp install <service account key.json>
 
 Runs one gcloud command as the admin service account, after the token's PIN
@@ -82,6 +85,17 @@ an explicit add-iam-policy-binding. Roles that reach the cluster or what it
 runs -- container and compute admin, Artifact Registry writes, bucket and
 secret reads -- are granted for at most 1h, after you type the role name
 back. roles/viewer cannot expire and needs `forever`.
+
+token logs has the admin account issue an access token for the log reader
+account -- roles/logging.viewer and nothing else, no keys -- scoped to
+reading logs, for DURATION (15m, 30m, 1h -- the default and Google's cap),
+and leaves it where you, and an agent working as you, can read it:
+/run/user/UID/gcp/logs-token. gcp logs, without sudo, runs gcloud logging
+with it, against the project from the settings.
+
+  sudo gcp token logs
+  gcp logs read 'resource.type="k8s_container" AND severity>=ERROR' \
+    --freshness=1h --limit=50
 EOF
   exit "${1:-2}"
 }
@@ -90,6 +104,41 @@ EOF
 case $1 in
   -h | --help | help) usage 0 ;;
 esac
+
+# ------------------------------------------------------------------ logs ---
+# As you, not root: the token is yours to read anyway, and what it can do is
+# bounded by Google -- one account, one role, a logging.read scope, an hour.
+# Only `gcloud logging` is offered, for clarity rather than as a boundary. The
+# config directory is a cache of its own, so no ~/.config/gcloud comes back.
+if [ "$1" = logs ]; then
+  shift
+  [ "$(id -u)" -ne 0 ] || die "run it without sudo: gcp logs ..." 2
+  tokens=/run/user/$(id -u)/gcp
+  [ -s "$tokens/logs-token" ] || die "no logs token; run: sudo gcp token logs" 2
+  expires_at=$(cat -- "$tokens/logs-token.expires" 2> /dev/null) || expires_at=0
+  case $expires_at in '' | *[!0-9]*) expires_at=0 ;; esac
+  [ "$(date +%s)" -lt "$expires_at" ] || die "the logs token has expired; run: sudo gcp token logs" 2
+  logs_project=$(cat -- "$tokens/project" 2> /dev/null) || logs_project=
+  case $logs_project in
+    [a-z]*[a-z0-9]) ;;
+    *) die "no project beside the logs token; run: sudo gcp token logs" 2 ;;
+  esac
+  case $logs_project in
+    *[!a-z0-9-]*) die "no project beside the logs token; run: sudo gcp token logs" 2 ;;
+  esac
+  exec env -i \
+    HOME="$HOME" \
+    PATH="$RUN_PATH" \
+    TERM="${TERM:-dumb}" \
+    LANG="${LANG:-C.UTF-8}" \
+    CLOUDSDK_CONFIG="${XDG_CACHE_HOME:-$HOME/.cache}/gcp-logs" \
+    CLOUDSDK_AUTH_ACCESS_TOKEN_FILE="$tokens/logs-token" \
+    CLOUDSDK_CORE_PROJECT="$logs_project" \
+    CLOUDSDK_CORE_CHECK_GCE_METADATA=false \
+    CLOUDSDK_COMPONENT_MANAGER_DISABLE_UPDATE_CHECK=1 \
+    gcloud logging "$@"
+fi
+
 [ "$(id -u)" -eq 0 ] || die "run it as: sudo gcp $*" 2
 target_user=${SUDO_USER:-}
 [ -n "$target_user" ] && [ "$target_user" != root ] \
@@ -242,6 +291,36 @@ done
 
 load_settings
 
+# token: an hour at most, which is what Google allows without an org policy
+# -- and this project has no organisation to set one in.
+if [ "$1" = token ]; then
+  [ $# -ge 2 ] && [ $# -le 3 ] || usage
+  [ "$2" = logs ] || die "no such token: $2 (there is: logs)" 2
+  case $LOGS_ACCOUNT in
+    [a-z]*[a-z0-9]) ;;
+    *) die "not an account id: $LOGS_ACCOUNT" ;;
+  esac
+  case $LOGS_ACCOUNT in
+    *[!a-z0-9-]*) die "not an account id: $LOGS_ACCOUNT" ;;
+  esac
+  duration=${3:-1h}
+  n=${duration%?}
+  case $duration in
+    [1-9]*m | [1-9]*h) ;;
+    *) die "not a duration: $duration (15m, 30m, 1h)" 2 ;;
+  esac
+  case $n in *[!0-9]*) die "not a duration: $duration (15m, 30m, 1h)" 2 ;; esac
+  [ ${#n} -le 4 ] || die "at most 1h" 2
+  case $duration in
+    *m) secs=$((n * 60)) ;;
+    *h) secs=$((n * 3600)) ;;
+  esac
+  [ "$secs" -le 3600 ] || die "at most 1h: Google issues no longer token here" 2
+  tokens=/run/user/$(id -u "$target_user")
+  [ -d "$tokens" ] || die "no $tokens; log in as $target_user first" 2
+  tokens=$tokens/gcp
+fi
+
 # Checked before the PIN is spent, like grant's arguments.
 if [ "$1" = shell ]; then
   [ $# -eq 1 ] || usage
@@ -382,7 +461,52 @@ age -d -i "$IDENTITY" "$KEY" | google_access_token > "$work/run/token" \
 [ -s "$work/run/token" ] || die "no access token"
 chown "$RUN_USER:$RUN_USER" "$work/run/token"
 chmod 0400 "$work/run/token"
-printf 'gcp: unlocked. Running gcloud as the admin account on %s.\n' "$project" >&2
+if [ "$1" = token ]; then
+  printf 'gcp: unlocked. Asking for the token as the admin account on %s.\n' "$project" >&2
+else
+  printf 'gcp: unlocked. Running gcloud as the admin account on %s.\n' "$project" >&2
+fi
+
+# ----------------------------------------------------------------- token ---
+# The admin account asks IAM Credentials for a token of the log reader's,
+# which it may do for that account alone. curl rather than gcloud auth: auth
+# is refused here, and this needs one request. The admin token goes in a
+# header file, not on curl's command line, where ps would show it.
+if [ "$1" = token ]; then
+  email="$LOGS_ACCOUNT@$project.iam.gserviceaccount.com"
+  { printf 'Authorization: Bearer '; cat -- "$work/run/token"; } > "$work/auth-header"
+  # shellcheck disable=SC2016 # jq's own variables
+  resp=$(jq -n --arg lifetime "${secs}s" \
+    '{scope: ["https://www.googleapis.com/auth/logging.read"], lifetime: $lifetime}' \
+    | curl -q -sS --proto =https --fail-with-body \
+      -H @"$work/auth-header" -H 'Content-Type: application/json' --data-binary @- \
+      "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/$email:generateAccessToken") \
+    || die "Google refused a token for $email: $(jq -r '.error.message? // .' <<< "${resp:-}" 2> /dev/null)"
+  logs_token=$(jq -r '.accessToken // empty' <<< "$resp")
+  case $logs_token in
+    '' | *[!A-Za-z0-9._-]*) die "no usable token in Google's answer" ;;
+  esac
+  expires_at=$(date -d "$(jq -r '.expireTime' <<< "$resp")" +%s) \
+    || die "no expiry in Google's answer"
+
+  # Written as you: the directory is yours, and root following a link you
+  # planted there would write wherever it pointed. The umask makes it 0600.
+  as_user() {
+    setpriv --reuid="$target_user" --regid="$(id -g "$target_user")" --init-groups "$@"
+  }
+  as_user mkdir -p -- "$tokens"
+  printf '%s' "$logs_token" | as_user tee -- "$tokens/.logs-token.new" > /dev/null
+  as_user mv -f -- "$tokens/.logs-token.new" "$tokens/logs-token"
+  printf '%s\n' "$expires_at" | as_user tee -- "$tokens/logs-token.expires" > /dev/null
+  printf '%s\n' "$project" | as_user tee -- "$tokens/project" > /dev/null
+  unset logs_token resp
+
+  printf 'gcp: a logs token for %s until %s, in\n' "$email" "$(date -d "@$expires_at" +%H:%M)" >&2
+  printf '     %s/logs-token. Read logs with\n\n' "$tokens" >&2
+  printf "       gcp logs read 'severity>=ERROR' --freshness=1h --limit=50\n\n" >&2
+  printf '     or any gcloud with --access-token-file=%s/logs-token.\n' "$tokens" >&2
+  exit 0
+fi
 
 # ----------------------------------------------------------------- shell ---
 if [ "$1" = shell ]; then

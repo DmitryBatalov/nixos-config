@@ -48,6 +48,7 @@
     GCP_SHELL_BASH = "${pkgs.bashInteractive}/bin/bash";
     GCP_GCLOUD_COMPLETION = "${pkgs.google-cloud-sdk}/share/bash-completion/completions/gcloud";
     GCP_TERMINALS = lib.concatStringsSep " " config.local.k8s.access.terminals;
+    GCP_LOGS_ACCOUNT = cfg.logsAccount;
   };
 
   wrapper = pkgs.writeShellApplication {
@@ -116,6 +117,17 @@ in {
         only the token is privileged, and as root every path on its command
         line -- an output file, --flags-file, a directory to upload -- would be
         opened with root's rights in a directory the user controls.
+      '';
+    };
+
+    logsAccount = lib.mkOption {
+      type = lib.types.str;
+      default = "logs-reader";
+      description = ''
+        Account id, in the project from the settings, that `sudo gcp token logs`
+        issues a token for. It should hold roles/logging.viewer and nothing
+        else, and no keys; the admin account needs
+        roles/iam.serviceAccountTokenCreator on it, and on no other account.
       '';
     };
   };
