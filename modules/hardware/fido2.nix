@@ -75,12 +75,8 @@ in {
         login.u2fAuth = true;
         sudo.u2fAuth = true;
         swaylock.u2fAuth = true;
-
-        # The one place the token is deliberately not accepted. greetd would
-        # otherwise inherit it from that global default, and the boot prompt is
-        # the worst place to find out how a 10s touch cue renders in a text
-        # greeter. Graphical login stays password-only.
-        greetd.u2f.enable = false;
+        # greetd inherits it from that global default too, so the boot login
+        # accepts the token as well, with the password as a fallback.
       };
     };
 
