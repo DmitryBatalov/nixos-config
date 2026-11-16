@@ -95,7 +95,12 @@
         # so "root" inside one is an unprivileged uid outside.
         rootless = true;
       };
-      libvirt.enable = true;
+      # Off: no VM had run here since the move to qemu:///session, and keeping
+      # the module meant keeping the system libvirtd, which an agent prompt
+      # turns into root on one wheel authentication. The old domains and disks
+      # have been deleted. NixOS VM tests do not need this: they run QEMU on
+      # /dev/kvm from the nix build sandbox.
+      libvirt.enable = false;
     };
   };
 
