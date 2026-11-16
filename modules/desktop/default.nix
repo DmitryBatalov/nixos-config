@@ -30,6 +30,12 @@ in {
       nautilus
       pavucontrol
       calc
+
+      # Installed through home-manager too; listed here only so polkitd sees
+      # its org.keepassxc.KeePassXC.unlockDatabase action. polkitd never reads
+      # home-manager's per-user profile, and without that action quick unlock
+      # fails.
+      keepassxc
     ];
   };
 }
