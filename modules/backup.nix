@@ -104,6 +104,19 @@ in {
         ".claude/jobs/*/tmp"
         ".claude/worktrees"
         ".claude/file-history"
+
+        # Logs, at any depth, rotated ones included: nothing is restored from
+        # them, and a single application log can outgrow everything else that
+        # changed that day.
+        #
+        # Except LevelDB's write-ahead log, which is data: IndexedDB and Local
+        # Storage in Chromium and every Electron app keep their newest writes
+        # in NNNNNN.log, and a restore without it loses them. restic applies
+        # the last matching pattern, so the re-include must come after `*.log`.
+        "*.log"
+        "*.log.[0-9]*"
+        "*.log.gz"
+        "![0-9][0-9][0-9][0-9][0-9][0-9].log"
       ];
 
       pruneOpts = [
