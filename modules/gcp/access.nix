@@ -49,6 +49,7 @@
     GCP_GCLOUD_COMPLETION = "${pkgs.google-cloud-sdk}/share/bash-completion/completions/gcloud";
     GCP_TERMINALS = lib.concatStringsSep " " config.local.k8s.access.terminals;
     GCP_LOGS_ACCOUNT = cfg.logsAccount;
+    GCP_METRICS_ACCOUNT = cfg.metricsAccount;
   };
 
   wrapper = pkgs.writeShellApplication {
@@ -128,6 +129,16 @@ in {
         issues a token for. It should hold roles/logging.viewer and nothing
         else, and no keys; the admin account needs
         roles/iam.serviceAccountTokenCreator on it, and on no other account.
+      '';
+    };
+
+    metricsAccount = lib.mkOption {
+      type = lib.types.str;
+      default = "metrics-reader";
+      description = ''
+        Account id, in the project from the settings, that `sudo gcp token
+        metrics` issues a token for: roles/monitoring.viewer and nothing else,
+        no keys, and the same token creator grant to the admin account.
       '';
     };
   };

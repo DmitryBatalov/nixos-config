@@ -36,7 +36,7 @@ _gcp() {
       ;;
     token)
       case $COMP_CWORD in
-        2) mapfile -t COMPREPLY < <(compgen -W 'logs' -- "$cur") ;;
+        2) mapfile -t COMPREPLY < <(compgen -W 'logs metrics' -- "$cur") ;;
         3) mapfile -t COMPREPLY < <(compgen -W '15m 30m 1h' -- "$cur") ;;
       esac
       COMPREPLY=("${COMPREPLY[@]/%/ }")
@@ -45,6 +45,13 @@ _gcp() {
     logs)
       # `gcp logs X` is `gcloud logging X`: completed as that line.
       local COMP_LINE=${COMP_LINE/logs/logging} COMP_POINT=$((COMP_POINT + 3))
+      ;;
+    metrics)
+      if [ "$COMP_CWORD" -eq 2 ]; then
+        mapfile -t COMPREPLY < <(compgen -W 'query query_range series labels' -- "$cur")
+        COMPREPLY=("${COMPREPLY[@]/%/ }")
+      fi
+      return
       ;;
     install)
       if [ "$COMP_CWORD" -eq 2 ]; then
@@ -76,7 +83,7 @@ _gcp() {
   done
   if [ "$COMP_CWORD" -eq 1 ]; then
     local w
-    for w in grant install shell token logs; do
+    for w in grant install shell token logs metrics; do
       [[ $w == "$cur"* ]] && COMPREPLY+=("$w ")
     done
   fi
