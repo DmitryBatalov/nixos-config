@@ -20,9 +20,10 @@
 #   token to every process running as them -- including the coding agent this
 #   exists to keep out.
 #
-#   The session from `login` deliberately does the opposite: a user-owned file,
-#   written BY THE USER via sudo -u. A long-running interactive tool is safer as
-#   the user than as root -- same RBAC either way, but no root process sitting
+#   The session from `login` deliberately does the opposite: entries in the
+#   user's own ~/.kube/config, written BY THE USER via sudo -u. A long-running
+#   interactive tool is safer as the user than as root -- same RBAC either way,
+#   but no root process sitting
 #   in a tmux pane that anything running as the user can drive with send-keys.
 #   Writing as the user is also what makes $HOME safe to touch at all: it is
 #   attacker-controlled here, and `ln -s / ~/.kube` would otherwise turn root's
@@ -57,9 +58,6 @@ TTL=${K8S_TTL:-15m}
 MAX_TTL_SECONDS=${K8S_MAX_TTL_SECONDS:-86400}
 TERMINALS=${K8S_TERMINALS:-*kitty* *foot* *alacritty* *wezterm* *ghostty* xterm* st}
 SESSION_TTL=${K8S_SESSION_TTL:-8h}
-# One session file per cluster, named after it: a directory of its own so a
-# viewer can watch it whole without picking up gcloud's backups.
-SESSION_DIR=${K8S_SESSION_DIR:-.kube/k8s-sessions}
 # `${VAR-default}` rather than `${VAR:-default}`: an *empty* value is a
 # deliberate "nothing may run", and the colon form would silently replace it
 # with the wrapper's own PATH -- turning allowedTools = [] into the widest
@@ -69,13 +67,12 @@ SHELL_PATH=${K8S_SHELL_PATH-$PATH}
 OPS_USER=${K8S_OPS_USER:-k8s-ops}
 SHELL_TTL=${K8S_SHELL_TTL:-1h}
 K9S_SKIN=${K8S_K9S_SKIN:-}
-MARKER='# k8s-session: written by "sudo k8s login", safe to delete'
 NS=
 
 usage() {
   cat >&2 <<'USAGE'
 Usage:
-  sudo k8s login --cluster NAME [--ttl DURATION] [--force]
+  sudo k8s login --cluster NAME [--ttl DURATION]
                                     read-only session (default 8h)
        k8s logout --cluster NAME    drop it
   sudo k8s shell --cluster NAME [--breakglass] [--ttl D]
@@ -85,13 +82,13 @@ Usage:
   --cluster NAME  required, every form: the credential in
                   /etc/k8s/clusters/NAME. There is no default cluster, so
                   production is never reached by leaving something out.
-                  login writes ~/.kube/k8s-sessions/NAME, context k8s-NAME.
+                  login adds context k8s-NAME to ~/.kube/config, replacing
+                  any earlier k8s-NAME there; logout removes it.
   --breakglass    assume the break-glass identity: full cluster-admin, named in
                   the audit log. Deliberately not called --rw: it is not
                   write access, it is everything.
   --ttl DURATION  token lifetime, e.g. 15m, 4h
   -n, --ns NS     default namespace
-  --force         login: replace a session file this tool did not write
 
   shell runs tmux as a dedicated account in a directory that exists only for
   the length of the session. Nothing of it is readable by you, which is the
@@ -119,10 +116,6 @@ user_home() {
   fi
   printf '%s' "$h"
 }
-
-# First line of a session file we wrote. Substring rather than the full marker:
-# the marker contains quotes that read badly inline.
-written_by_us() { head -1 "$1" 2> /dev/null | grep -qF 'k8s-session'; }
 
 die() {
   printf 'k8s: %s\n' "$1" >&2
@@ -234,13 +227,11 @@ case "${1:-}" in
 esac
 
 profile=ro
-force=0
 ttl_given=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --breakglass) profile=breakglass; shift ;;
     --ro) profile=ro; shift ;;
-    --force) force=1; shift ;;
     --cluster) CLUSTER=${2:?--cluster needs a value}; shift 2 ;;
     --ttl) TTL=${2:?--ttl needs a value}; ttl_given=1; shift 2 ;;
     -n | --ns) NS=${2:?--ns needs a value}; shift 2 ;;
@@ -299,11 +290,10 @@ fi
 # is not a choice anyone notices making.
 #
 # The credential, the accounts file and optionally an identity come from
-# $CLUSTERS_DIR/NAME, and login writes $SESSION_DIR/NAME, whose cluster, user
-# and context are all k8s-NAME. Separate files because the session is written
-# by the user and dropped by `logout` whole; distinct names because KUBECONFIG
-# merges files by entry name, and two files that both call their context the
-# same would silently shadow one another.
+# $CLUSTERS_DIR/NAME, and login adds a cluster, user and context, all named
+# k8s-NAME, to ~/.kube/config. The k8s- prefix is this tool's: login replaces
+# those three entries and logout deletes them, so a context of your own must
+# not be called k8s-NAME.
 #
 # NAME becomes part of paths and of the kubeconfig, so it is a DNS-1123 label:
 # no slash to climb out of $CLUSTERS_DIR, no quote to break out of the YAML.
@@ -331,7 +321,6 @@ resolve_cluster() {
   # A cluster may bring its own identity -- install-credential.sh writes one
   # into the directory it is given -- or share the machine's.
   if [ -e "$dir/identity.txt" ]; then IDENTITY=$dir/identity.txt; fi
-  SESSION_FILE=$SESSION_DIR/$CLUSTER
   kc_cluster=k8s-$CLUSTER
   kc_user=k8s-$CLUSTER
   kc_context=k8s-$CLUSTER
@@ -399,24 +388,59 @@ fi
 target_user=${SUDO_USER:-$(id -un)}
 target_home=$(user_home "$target_user")
 [ -n "$target_home" ] || die "cannot determine the home directory of $target_user"
-session_config="$target_home/$SESSION_FILE"
+# The stock kubeconfig, by path rather than through KUBECONFIG: login writes
+# here whatever the caller's environment says, so logout must look here too.
+kubeconfig="$target_home/.kube/config"
+
+# A command as the user, with nothing of root's environment: their kubeconfig
+# is touched only with their rights.
+as_target() {
+  sudo -u "$target_user" env -i PATH="$PATH" HOME="$target_home" "$@"
+}
+
+# Whose context k8s-NAME in kubeconfig $1 is: none, ours (login tags it with
+# the k8s-session extension, which kubectl keeps when it rewrites the file --
+# unlike comments) or foreign. Run as the user.
+context_owner() {
+  local names tag
+  names=$(KUBECONFIG=$1 kubectl config view -o jsonpath='{.contexts[*].name}' 2> /dev/null) \
+    || names=
+  case " $names " in *" $kc_context "*) ;; *) echo none; return ;; esac
+  tag=$(KUBECONFIG=$1 kubectl config view -o \
+    "jsonpath={.contexts[?(@.name==\"$kc_context\")].context.extensions[?(@.name==\"k8s-session\")].name}" \
+    2> /dev/null) || tag=
+  if [ "$tag" = k8s-session ]; then echo ours; else echo foreign; fi
+}
 
 # ---------------------------------------------------------------- logout ----
-# No privileges needed: it removes a file the user owns.
+# No privileges needed: it edits a file the user owns.
 if [ "$mode" = logout ]; then
-  # `head` and `rm` below both follow symlinks, and the path they follow lives
-  # in $HOME -- attacker-controlled in this threat model. `login` was hardened
-  # against exactly this by writing through `sudo -u`; logout has to drop the
-  # same way, or a symlink turns root's `rm` into someone else's choice of file.
+  # kubectl follows symlinks, and the path it follows lives in $HOME --
+  # attacker-controlled in this threat model. `login` was hardened against
+  # exactly this by writing through `sudo -u`; logout has to drop the same way,
+  # or a symlink turns root's write into someone else's choice of file.
   if [ "$(id -u)" -eq 0 ]; then
     # sudo would set SUDO_USER to root in the child, which then looks for the
     # session in root's home, finds none and reports success.
     exec sudo -u "$target_user" env -u SUDO_USER "$0" logout --cluster "$CLUSTER"
   fi
-  [ -e "$session_config" ] || die "no session" 0
-  written_by_us "$session_config" \
-    || die "$session_config was not written by this tool, refusing to delete it"
-  rm -f "$session_config"
+  export KUBECONFIG=$kubeconfig
+  [ -f "$kubeconfig" ] || die "no session" 0
+  case $(context_owner "$kubeconfig") in
+    foreign) die "context $kc_context in $kubeconfig was not written by this tool, refusing to delete it" ;;
+  esac
+  # A dangling current-context would make every bare kubectl fail; none at all
+  # is what a fresh config has.
+  if [ "$(kubectl config current-context 2> /dev/null || true)" = "$kc_context" ]; then
+    kubectl config unset current-context > /dev/null
+  fi
+  # Each of the three on its own: a hand edit may have removed the context and
+  # left the user entry, token and all, behind.
+  dropped=0
+  kubectl config delete-context "$kc_context" > /dev/null 2>&1 && dropped=1
+  kubectl config delete-user "$kc_user" > /dev/null 2>&1 && dropped=1
+  kubectl config delete-cluster "$kc_cluster" > /dev/null 2>&1 && dropped=1
+  [ "$dropped" -eq 1 ] || die "no session" 0
   printf 'k8s: session dropped\n' >&2
   exit 0
 fi
@@ -457,22 +481,28 @@ fi
 
 # Everything that can refuse the request must refuse it here: past this point
 # the user has already spent a PIN entry and a touch.
-first_login=0
 if [ "$mode" = login ]; then
   [ "$ttl_given" -eq 1 ] || TTL=$SESSION_TTL
   # Looked at as the user, like the write below: the path is in their $HOME, so
   # root must not follow a symlink planted there into a file only root can
   # read, nor open a FIFO in its place and hang before the PIN is asked for.
-  # A FIFO or anything else that is not a plain file is refused, not read.
-  if sudo -u "$target_user" test -e "$session_config"; then
-    if [ "$force" -ne 1 ] && ! {
-      sudo -u "$target_user" test -f "$session_config" \
-        && sudo -u "$target_user" head -1 "$session_config" | grep -qF 'k8s-session'
-    }; then
-      die "$session_config exists and was not written by this tool; use --force to replace it"
-    fi
-  else
-    first_login=1
+  # A FIFO or anything else that is not a plain file is refused, not read, and
+  # so is a file kubectl cannot parse -- the merge below would fail on it too.
+  # So is a symlink: the merge renames a new file over the path, which would
+  # replace the link rather than update what it points to.
+  if as_target test -L "$kubeconfig"; then
+    die "$kubeconfig is a symlink; login replaces the file, so make it a plain one"
+  fi
+  if as_target test -e "$kubeconfig"; then
+    as_target test -f "$kubeconfig" \
+      || die "$kubeconfig is not a regular file; move it aside and log in again"
+    as_target env KUBECONFIG="$kubeconfig" kubectl config view > /dev/null \
+      || die "kubectl cannot read $kubeconfig; fix it and log in again"
+    # declare -f: the function runs in the user's shell, not in this one.
+    owner=$(as_target bash -c "$(declare -f context_owner); kc_context=$kc_context; context_owner \"\$1\"" \
+      bash "$kubeconfig")
+    [ "$owner" != foreign ] \
+      || die "$kubeconfig already has a context $kc_context this tool did not write; rename it and log in again"
   fi
 fi
 
@@ -608,10 +638,12 @@ unset minter minted
 [ -n "$server" ] || die "the minter kubeconfig has no server for its current context"
 [ -n "$token" ] && [ "$token" != null ] || die "the cluster returned no token"
 
+# With `merge`, no current-context: a session merged into ~/.kube/config adds a
+# context and leaves the one already chosen there alone. Identity and expiry go
+# in an extension on the context rather than in comments, which kubectl drops
+# whenever it rewrites the file; the extension's name is also how logout and
+# the next login tell a session from a context of the user's own.
 render_kubeconfig() {
-  printf '%s\n' "$MARKER"
-  printf '# identity: system:serviceaccount:%s:%s\n' "$SA_NS" "$SA"
-  printf '# expires:  %s\n' "$expires"
   printf 'apiVersion: v1\nkind: Config\nclusters:\n- name: %s\n  cluster:\n' "$kc_cluster"
   printf '    server: %s\n' "$server"
   if [ -n "$ca_data" ]; then
@@ -624,31 +656,58 @@ render_kubeconfig() {
   printf 'contexts:\n- name: %s\n  context:\n    cluster: %s\n    user: %s\n' \
     "$kc_context" "$kc_cluster" "$kc_user"
   if [ -n "$NS" ]; then printf '    namespace: %s\n' "$NS"; fi
-  printf 'current-context: %s\n' "$kc_context"
+  printf '    extensions:\n    - name: k8s-session\n      extension:\n'
+  printf '        identity: system:serviceaccount:%s:%s\n' "$SA_NS" "$SA"
+  printf '        expires: "%s"\n' "$expires"
+  if [ "${1:-}" != merge ]; then printf 'current-context: %s\n' "$kc_context"; fi
 }
+
+# The session, on stdin, merged into ~/.kube/config. Run as the user. kubectl
+# merges by entry name with the first file winning, so listing the session
+# first replaces an earlier k8s-NAME whole -- a namespace dropped since the
+# last login goes too -- while current-context still comes from the config,
+# the only file that sets one. Written beside it and renamed over it, so a
+# failure halfway leaves the old config, never half a new one.
+#
+# --raw, not --flatten: flatten would freeze every file-referenced certificate
+# of the user's own clusters into a copy, and fail outright if one is missing.
+# Relative paths stay valid, as the merged file lands in the same directory.
+#
+# config.lock is kubectl's own lock, taken the way it takes it (O_EXCL, fail
+# rather than wait): without it, a kubectl writing between our read and our
+# rename -- use-context, kind, another login -- would be silently undone.
+# shellcheck disable=SC2016 # expanded by the inner sh
+MERGE_SCRIPT='
+set -eu
+umask 077
+cfg=$HOME/.kube/config
+session= merged= locked=
+trap '\''rm -f $session $merged; [ -z "$locked" ] || rm -f "$cfg.lock"'\'' EXIT
+mkdir -p "$HOME/.kube"
+(set -C; : > "$cfg.lock") 2> /dev/null \
+  || { echo "k8s: $cfg.lock exists: another kubectl is writing the config" >&2; exit 1; }
+locked=1
+session=$(mktemp "$HOME/.kube/.k8s-session.XXXXXX")
+merged=$(mktemp "$HOME/.kube/.config.XXXXXX")
+cat > "$session"
+if [ -e "$cfg" ]; then from=$session:$cfg; else from=$session; fi
+KUBECONFIG=$from kubectl config view --raw > "$merged"
+mv -f "$merged" "$cfg"
+'
 
 # ----------------------------------------------------------------- login ----
 if [ "$mode" = login ]; then
-  session_dir=$(dirname "$session_config")
-  # Both the mkdir and the write run as the user. If ~/.kube is a symlink into
-  # /etc, the write fails with EACCES instead of landing a user-owned file
-  # somewhere the attacker chose -- race-free, unlike testing for a symlink.
-  sudo -u "$target_user" mkdir -p "$session_dir"
-  render_kubeconfig | sudo -u "$target_user" sh -c 'umask 077; cat > "$1"' sh "$session_config"
+  # Everything runs as the user. If ~/.kube is a symlink into /etc, the write
+  # fails with EACCES instead of landing a user-owned file somewhere the
+  # attacker chose -- race-free, unlike testing for a symlink.
+  render_kubeconfig merge | as_target sh -c "$MERGE_SCRIPT" \
+    || die "could not add the session to $kubeconfig"
   unset token
   printf 'k8s: read-only session for %s until %s\n' "$target_user" "$expires" >&2
-  # KUBECONFIG takes current-context from the first file that sets one, so
-  # with several session files the context is named, not assumed.
+  # current-context stays what it was: production is reached by naming it.
   printf 'k8s: kubectl --context %s and k9s --context %s now work without sudo.\n' \
     "$kc_context" "$kc_context" >&2
   printf '     "k8s logout --cluster %s" ends it.\n' "$CLUSTER" >&2
-  if [ "$first_login" -eq 1 ]; then
-    # Appended, not assigned: KUBECONFIG may already list other clusters'
-    # sessions, and replacing it would hide them.
-    printf "k8s: kubectl only sees this session if KUBECONFIG lists it --\n" >&2
-    printf "       gcloud writes ~/.kube/config, this writes the session file:\n" >&2
-    printf "       export KUBECONFIG=\${KUBECONFIG:-\$HOME/.kube/config}:\$HOME/%s\n" "$SESSION_FILE" >&2
-  fi
   exit 0
 fi
 

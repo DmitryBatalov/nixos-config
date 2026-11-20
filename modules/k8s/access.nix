@@ -79,7 +79,6 @@
     K8S_SA_BREAKGLASS = cfg.breakGlassServiceAccount;
     K8S_TTL = cfg.ttl;
     K8S_SESSION_TTL = cfg.sessionTtl;
-    K8S_SESSION_DIR = cfg.sessionDir;
     K8S_OPS_USER = cfg.opsUser;
     K8S_SHELL_TTL = cfg.shellTtl;
     K8S_TERMINALS = lib.concatStringsSep " " cfg.terminals;
@@ -188,22 +187,11 @@ in {
 
         Neither the names nor the files are declared here: which clusters a
         machine can reach is per-machine credential state, and this repository
-        is public. NAME is a DNS-1123 label; it names the session file
-        (sessionDir/NAME) and the context, `k8s-NAME`.
-      '';
-    };
-
-    sessionDir = lib.mkOption {
-      type = lib.types.str;
-      default = ".kube/k8s-sessions";
-      description = ''
-        Where `k8s login --cluster NAME` writes the session, as sessionDir/NAME,
-        relative to the user's home. Deliberately NOT ~/.kube/config: gcloud
-        owns that file for the GKE contexts, and overwriting it would delete
-        them. A directory of their own, so that KUBECONFIG can glob it and a
-        kubeconfig viewer can watch it whole without picking up anything
-        else under ~/.kube. Append each file in it to KUBECONFIG after
-        ~/.kube/config, which then keeps deciding current-context.
+        is public. NAME is a DNS-1123 label; it names the cluster, user and
+        context that `k8s login --cluster NAME` adds to the user's own
+        ~/.kube/config, all `k8s-NAME`. That leaves current-context alone, so
+        a local cluster stays the default and production is reached by naming
+        it.
       '';
     };
 
@@ -355,8 +343,8 @@ in {
         Token lifetime for `k8s login`. This is the window during which anything
         running as the user -- the coding agent included -- has the read-only
         identity. Shorten it if that matters more than not re-authenticating.
-        The apiserver may cap it lower; the real expiry is printed and recorded
-        in the generated kubeconfig.
+        The apiserver may cap it lower; the real expiry is printed, and kept in
+        the k8s-session extension of the context in ~/.kube/config.
       '';
     };
 
