@@ -16,6 +16,7 @@
         "pulseaudio",
         "custom/keyboard",
         "battery",
+        "custom/battery-conservation",
         "custom/ppd-menu",
         "clock",
         "custom/powermenu",
@@ -120,6 +121,13 @@
         },
         "interval": 30,
         "tooltip-format": "{timeTo}"
+    },
+
+    "custom/battery-conservation": {
+        "exec": "$HOME/.config/sway/scripts/battery-conservation-waybar",
+        "on-click": "$HOME/.config/sway/scripts/battery-conservation-toggle",
+        "return-type": "json",
+        "interval": 30
     },
 
     "clock": {

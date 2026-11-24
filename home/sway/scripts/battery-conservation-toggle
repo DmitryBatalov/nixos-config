@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+f=$(echo /sys/bus/platform/drivers/ideapad_acpi/*/conservation_mode)
+
+if [ "$(cat "$f")" = 1 ]; then
+    echo 0 > "$f"
+else
+    echo 1 > "$f"
+fi

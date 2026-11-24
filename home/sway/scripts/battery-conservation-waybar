@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+# IdeaPad/ThinkBook conservation mode: the firmware stops charging at ~60%.
+# Writable by the user through a udev rule (modules/hardware/laptop.nix).
+f=$(echo /sys/bus/platform/drivers/ideapad_acpi/*/conservation_mode)
+
+case "$(cat "$f" 2>/dev/null)" in
+    1) echo '{"text":"󰌪 60%","alt":"on","class":"on","tooltip":"Conservation mode on: charging stops at ~60%. Click to charge to 100%"}' ;;
+    0) echo '{"text":"󰁹 100%","alt":"off","class":"off","tooltip":"Conservation mode off: charging to 100%. Click to cap at ~60%"}' ;;
+    *) echo '{"text":"󰂑","alt":"unknown","class":"unknown","tooltip":"Conservation mode unavailable"}' ;;
+esac

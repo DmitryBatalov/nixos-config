@@ -78,7 +78,11 @@
     hardware = {
       bluetooth.enable = true;
       fido2.enable = true;
-      laptop.enable = true;
+      laptop = {
+        enable = true;
+        # ThinkBook: a ~60% charge cap, toggled from waybar.
+        conservationToggle.enable = true;
+      };
       printers.enable = true;
       vialKeyboard.enable = true;
     };
