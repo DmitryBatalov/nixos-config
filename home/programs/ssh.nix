@@ -19,6 +19,13 @@
         PubkeyAcceptedAlgorithms = "+ssh-rsa";
         HostkeyAlgorithms = "+ssh-rsa,ecdsa-sha2-nistp521";
       };
+      # Headless NixOS box (hosts/atlas). The address is a DHCP reservation
+      # on the Keenetic; deploys use it too:
+      # nixos-rebuild switch --flake .#atlas --target-host atlas --sudo --ask-sudo-password
+      "atlas" = {
+        HostName = "192.168.1.46";
+        User = "dmitry";
+      };
     };
   };
 
