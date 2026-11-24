@@ -106,6 +106,11 @@
 
   # ============================= Host specifics =============================
 
+  # Signs every path this store builds, so atlas can import a deploy without
+  # its user being a trusted nix user. Root-only and outside this repository;
+  # the public half is in hosts/atlas.
+  nix.settings.secret-key-files = ["/etc/nix/signing.key"];
+
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
