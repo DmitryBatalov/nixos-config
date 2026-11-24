@@ -18,6 +18,10 @@
       url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nixvim-config = {
       url = "path:./home/dev/nixvim";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
@@ -38,9 +42,8 @@
     username = "dmitry";
     specialArgs = {inherit inputs username;};
 
-    # `home` pulls in home-manager as a NixOS module. Only one host uses it
-    # today, but a headless machine would want it off, which is why it stays a
-    # flag rather than being inlined.
+    # `home` pulls in home-manager as a NixOS module. The headless host leaves
+    # it off, which is why it is a flag rather than being inlined.
     mkHost = {
       modules,
       home ? false,
@@ -73,6 +76,11 @@
       nixos = mkHost {
         modules = [./hosts/nixos];
         home = true;
+      };
+
+      # Headless: no home-manager, see modules/server.nix.
+      atlas = mkHost {
+        modules = [./hosts/atlas];
       };
     };
   };

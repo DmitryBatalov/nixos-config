@@ -10,6 +10,7 @@
     ./networking.nix
     ./overlays.nix
     ./proxy.nix
+    ./server.nix
 
     ./desktop
     ./desktop/audio.nix
