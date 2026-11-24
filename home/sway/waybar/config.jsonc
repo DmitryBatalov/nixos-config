@@ -15,8 +15,7 @@
         "custom/backup",
         "pulseaudio",
         "custom/keyboard",
-        "battery",
-        "custom/battery-conservation",
+        "custom/battery",
         "custom/ppd-menu",
         "clock",
         "custom/powermenu",
@@ -110,21 +109,8 @@
         "tooltip": false
     },
 
-    "battery": {
-        "bat": "BAT1",
-        "format": "{icon} {capacity}%",
-        "format-charging": "󰂄 {capacity}%",
-        "format-icons": ["󰂎", "󰁺", "󰁼", "󰁾", "󰂀", "󰂂", "󰁹"],
-        "states": {
-            "warning": 20,
-            "critical": 10
-        },
-        "interval": 30,
-        "tooltip-format": "{timeTo}"
-    },
-
-    "custom/battery-conservation": {
-        "exec": "$HOME/.config/sway/scripts/battery-conservation-waybar",
+    "custom/battery": {
+        "exec": "$HOME/.config/sway/scripts/battery-waybar",
         "on-click": "$HOME/.config/sway/scripts/battery-conservation-toggle",
         "return-type": "json",
         "interval": 30
