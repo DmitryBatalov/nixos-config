@@ -38,9 +38,11 @@
 
         # HTTP->SOCKS5 bridge: Bun's fetch supports HTTP_PROXY but rejects
         # socks5h:// and socks5:// can't do remote DNS we need.
+        # CLAUDE_SOCKS_UPSTREAM lets a host without its own tunnel point the
+        # bridge at another SOCKS5 server (e.g. the router's, on the LAN).
         ${pkgs.gost}/bin/gost \
           -L="http://127.0.0.1:$PORT" \
-          -F="socks5://127.0.0.1:1081" \
+          -F="socks5://''${CLAUDE_SOCKS_UPSTREAM:-127.0.0.1:1081}" \
           >/dev/null 2>&1 &
         GOST_PID=$!
 
