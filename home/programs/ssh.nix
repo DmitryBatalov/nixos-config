@@ -1,8 +1,14 @@
-{
+{pkgs, ...}: {
+  # For hosts only reachable through the tunnel:
+  #   ProxyCommand nc -X 5 -x 127.0.0.1:1081 %h %p
+  home.packages = [pkgs.netcat-openbsd];
+
   # enable ssh agent (i.e. access remote git repo with ssh key)
   programs.ssh = {
     enable = true;
     enableDefaultConfig = false;
+    # Per-machine hosts, kept out of this public repository.
+    includes = ["config.local"];
     settings = {
       "*" = {
         AddKeysToAgent = "yes";
@@ -25,6 +31,10 @@
       "atlas" = {
         HostName = "192.168.1.46";
         User = "dmitry";
+        # For git on atlas, which holds no keys of its own. The cost: while a
+        # session is open, any process there that can reach the socket can
+        # sign with every key in this agent.
+        ForwardAgent = "yes";
       };
     };
   };
