@@ -83,14 +83,19 @@
   environment.sessionVariables.CLAUDE_SOCKS_UPSTREAM = "192.168.1.142:1081";
 
   # Plugged in around the clock: holding a ThinkPad battery at 100% wears it
-  # out within a year or two. thinkpad_acpi exposes the thresholds.
+  # out within a year or two. 55-60% ages it least while still leaving hours
+  # of runtime through a power cut. thinkpad_acpi exposes the thresholds.
+  #
+  # On this E14 (BIOS 1.31, EC 1.13) the two files READ BACK SWAPPED: after
+  # this runs, sysfs shows start=60 end=55. Writes are correct -- verified by
+  # behaviour: with start=78 end=90 written, the battery charged past 78.
   #
   # Not a tmpfiles rule: tmpfiles runs ~2 s before BAT0 appears, and a `w` to a
-  # missing path is skipped without a word -- the first boot came up at 80/75.
-  # The end is widened to 100 first, so neither write can be refused as a start
-  # at or above the end, whatever the controller held before.
+  # missing path is skipped without a word. The end is widened to 100 first, so
+  # neither write can be refused as a start at or above the end, whatever the
+  # controller held before.
   systemd.services.battery-charge-thresholds = {
-    description = "Hold the battery between 75% and 80%";
+    description = "Hold the battery between 55% and 60%";
     wantedBy = ["multi-user.target"];
     serviceConfig = {
       Type = "oneshot";
@@ -103,8 +108,8 @@
         sleep 1
       done
       echo 100 > "$b/charge_control_end_threshold"
-      echo 75 > "$b/charge_control_start_threshold"
-      echo 80 > "$b/charge_control_end_threshold"
+      echo 55 > "$b/charge_control_start_threshold"
+      echo 60 > "$b/charge_control_end_threshold"
     '';
   };
 
