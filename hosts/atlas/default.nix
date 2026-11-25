@@ -51,6 +51,11 @@
   environment.systemPackages = [
     pkgs.tmux
     inputs.claude-config.packages.${pkgs.stdenv.hostPlatform.system}.default
+    inputs.nixvim-config.packages.${pkgs.stdenv.hostPlatform.system}.default
+    # ssh to hosts only reachable through the router's SOCKS5, listed in
+    # ~/.ssh/config (outside this repository):
+    #   ProxyCommand nc -X 5 -x 192.168.1.142:1081 %h %p
+    pkgs.netcat-openbsd
   ];
 
   # The built-in Ethernet is dead (nothing behind its PCIe port), so the box
